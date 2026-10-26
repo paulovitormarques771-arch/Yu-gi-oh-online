@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 import { Swords } from "lucide-react";
 
 export function SiteNav() {
@@ -18,7 +19,7 @@ export function SiteNav() {
   );
 }
 
-export function DuelButton({ children }: { children: React.ReactNode }) {
+export function DuelButton({ children }: { children: ReactNode }) {
   return (
     <Link
       to="/jogar"
