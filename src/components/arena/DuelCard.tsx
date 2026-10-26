@@ -12,7 +12,7 @@ export function DuelCard({ card, className, interactive = true }: { card: CardDa
   const legendary = card.rarity === "lendaria";
   return (
     <motion.div
-      whileHover={interactive ? { rotateY: 10, rotateX: -6, y: -10, scale: 1.04 } : undefined}
+      {...(interactive ? { whileHover: { rotateY: 10, rotateX: -6, y: -10, scale: 1.04 } } : {})}
       transition={{ type: "spring", stiffness: 220, damping: 18 }}
       className={cn(
         "preserve-3d relative aspect-[59/86] w-44 rounded-lg border-2 p-2 shadow-2xl bg-gradient-to-b",
