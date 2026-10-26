@@ -52,7 +52,7 @@ function Duelo() {
       </div>
       <div className="perspective-arena flex flex-1 items-center justify-center px-4">
         <motion.div initial={{ rotateX: 70, opacity: 0 }} animate={{ rotateX: 40, opacity: 1 }} transition={{ duration: 1.2 }}
-          className="w-full max-w-3xl space-y-6 rounded-2xl border border-primary/40 bg-card/30 p-4 glow-primary md:p-8">
+          className="w-full max-w-xl space-y-4 rounded-2xl border border-primary/40 bg-card/30 p-4 glow-primary md:p-8">
           <Zones enemy />
           <div className="h-px bg-energy" />
           <Zones />
