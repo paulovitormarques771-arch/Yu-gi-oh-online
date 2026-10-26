@@ -132,7 +132,7 @@ function Landing() {
   );
 }
 
-function Section({ title, kicker, children }: { title: string; kicker: string; children: React.ReactNode }) {
+function Section({ title, kicker, children }: { title: string; kicker: string; children: import("react").ReactNode }) {
   return (
     <section className="mx-auto max-w-7xl px-4 py-24">
       <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-12 text-center">
