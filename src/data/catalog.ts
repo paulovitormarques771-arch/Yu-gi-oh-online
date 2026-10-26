@@ -2,7 +2,8 @@
 // character portraits are original AI-generated art created for this project.
 
 import yugiMuto from "@/assets/characters/yugi-muto.jpg";
-import yamiYugi from "@/assets/characters/yami-yugi.jpg";
+// Yami Yugi shares Yugi's portrait (same character in the anime).
+const yamiYugi = yugiMuto;
 import setoKaiba from "@/assets/characters/seto-kaiba.jpg";
 import joeyWheeler from "@/assets/characters/joey-wheeler.jpg";
 import teaGardner from "@/assets/characters/tea-gardner.jpg";
