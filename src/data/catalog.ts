@@ -1,38 +1,69 @@
-// Initial reference catalog. Names are kept as in the brief; no official artwork is bundled —
-// cards render a named placeholder until an authorized asset is attached (imageUrl).
+// Reference catalog. Card images come from the YGOPRODeck CDN (free fan-project API);
+// character portraits are original AI-generated art created for this project.
+
+import yugiMuto from "@/assets/characters/yugi-muto.jpg";
+import yamiYugi from "@/assets/characters/yami-yugi.jpg";
+import setoKaiba from "@/assets/characters/seto-kaiba.jpg";
+import joeyWheeler from "@/assets/characters/joey-wheeler.jpg";
+import teaGardner from "@/assets/characters/tea-gardner.jpg";
+import tristanTaylor from "@/assets/characters/tristan-taylor.jpg";
+import maiValentine from "@/assets/characters/mai-valentine.jpg";
+import pegasus from "@/assets/characters/pegasus.jpg";
+import yamiBakura from "@/assets/characters/yami-bakura.jpg";
+import marikIshtar from "@/assets/characters/marik-ishtar.jpg";
+import ishizuIshtar from "@/assets/characters/ishizu-ishtar.jpg";
+import rexRaptor from "@/assets/characters/rex-raptor.jpg";
+import weevilUnderwood from "@/assets/characters/weevil-underwood.jpg";
+import makoTsunami from "@/assets/characters/mako-tsunami.jpg";
+import banditKeith from "@/assets/characters/bandit-keith.jpg";
 
 export type CardKind = "monster" | "spell" | "trap";
 export type Rarity = "comum" | "rara" | "super" | "ultra" | "lendaria";
 
 export interface CardData {
-  id: string;
+  id: number;
   name: string;
   kind: CardKind;
-  attribute?: "TREVAS" | "LUZ" | "TERRA" | "ÁGUA" | "FOGO" | "VENTO" | "DIVINO";
-  level?: number;
   type?: string;
-  atk?: number | null; // null = "?"
+  race?: string;
+  attribute?: string;
+  level?: number;
+  atk?: number | null;
   def?: number | null;
-  text: string;
-  rarity: Rarity;
+  desc: string;
+  rarity?: Rarity;
   character?: string;
   imageUrl?: string;
 }
 
+export const cardImageUrl = (id: number) => `https://images.ygoprodeck.com/images/cards/${id}.jpg`;
+export const cardImageSmallUrl = (id: number) => `https://images.ygoprodeck.com/images/cards_small/${id}.jpg`;
+
+export const ATTRIBUTE_LABELS: Record<string, string> = {
+  DARK: "TREVAS",
+  LIGHT: "LUZ",
+  EARTH: "TERRA",
+  WATER: "ÁGUA",
+  FIRE: "FOGO",
+  WIND: "VENTO",
+  DIVINE: "DIVINO",
+};
+
+// Iconic cards for the landing page (ids match the YGOPRODeck CDN).
 export const CARDS: CardData[] = [
-  { id: "mago-negro", name: "Mago Negro", kind: "monster", attribute: "TREVAS", level: 7, type: "Mago", atk: 2500, def: 2100, text: "O mago supremo em termos de ataque e defesa.", rarity: "ultra", character: "yami-yugi" },
-  { id: "garota-maga-negra", name: "Garota Maga Negra", kind: "monster", attribute: "TREVAS", level: 6, type: "Mago", atk: 2000, def: 1700, text: "Ganha 300 ATK para cada \"Mago Negro\" nos Cemitérios.", rarity: "ultra", character: "yugi-muto" },
-  { id: "dragao-branco", name: "Dragão Branco de Olhos Azuis", kind: "monster", attribute: "LUZ", level: 8, type: "Dragão", atk: 3000, def: 2500, text: "Este lendário dragão é uma poderosa máquina de destruição.", rarity: "lendaria", character: "seto-kaiba" },
-  { id: "dragao-negro", name: "Dragão Negro de Olhos Vermelhos", kind: "monster", attribute: "TREVAS", level: 7, type: "Dragão", atk: 2400, def: 2000, text: "Um dragão feroz com um ataque mortal.", rarity: "ultra", character: "joey-wheeler" },
-  { id: "exodia", name: "Exodia, o Proibido", kind: "monster", attribute: "TREVAS", level: 3, type: "Mago", atk: 1000, def: 1000, text: "Reúna as 5 peças na mão para vencer o Duelo.", rarity: "lendaria", character: "yugi-muto" },
-  { id: "slifer", name: "Slifer, o Dragão Celeste", kind: "monster", attribute: "DIVINO", level: 10, type: "Divino", atk: null, def: null, text: "Ganha 1000 ATK/DEF para cada carta na sua mão.", rarity: "lendaria", character: "marik-ishtar" },
-  { id: "obelisco", name: "Obelisco, o Atormentador", kind: "monster", attribute: "DIVINO", level: 10, type: "Divino", atk: 4000, def: 4000, text: "Requer 3 Tributos para ser Invocado.", rarity: "lendaria", character: "seto-kaiba" },
-  { id: "dragao-ra", name: "Dragão Alado de Rá", kind: "monster", attribute: "DIVINO", level: 10, type: "Divino", atk: null, def: null, text: "O mais poderoso dos Deuses Egípcios.", rarity: "lendaria", character: "marik-ishtar" },
-  { id: "caveira-invocada", name: "Caveira Invocada", kind: "monster", attribute: "TREVAS", level: 6, type: "Demônio", atk: 2500, def: 1200, text: "Um demônio com poderes sombrios para confundir o inimigo.", rarity: "super", character: "yugi-muto" },
-  { id: "kuriboh", name: "Kuriboh", kind: "monster", attribute: "TREVAS", level: 1, type: "Demônio", atk: 300, def: 200, text: "Descarte esta carta para reduzir a 0 o dano de batalha.", rarity: "comum", character: "yugi-muto" },
-  { id: "polimerizacao", name: "Polimerização", kind: "spell", text: "Invoque por Fusão 1 Monstro de Fusão do seu Deck Adicional.", rarity: "rara" },
-  { id: "monstro-renascido", name: "Monstro Renascido", kind: "spell", text: "Escolha 1 monstro em qualquer Cemitério; Invoque-o por Invocação-Especial.", rarity: "super" },
-  { id: "forca-espelho", name: "Força do Espelho", kind: "trap", text: "Quando um monstro do oponente declarar um ataque: destrua todos os monstros em Posição de Ataque dele.", rarity: "super" },
+  { id: 46986414, name: "Mago Negro", kind: "monster", attribute: "DARK", level: 7, race: "Mago", atk: 2500, def: 2100, desc: "O mago supremo em termos de ataque e defesa.", rarity: "ultra", character: "yami-yugi", imageUrl: cardImageUrl(46986414) },
+  { id: 38033121, name: "Garota Maga Negra", kind: "monster", attribute: "DARK", level: 6, race: "Mago", atk: 2000, def: 1700, desc: "Ganha 300 ATK para cada \"Mago Negro\" nos Cemitérios.", rarity: "ultra", character: "yugi-muto", imageUrl: cardImageUrl(38033121) },
+  { id: 89631139, name: "Dragão Branco de Olhos Azuis", kind: "monster", attribute: "LIGHT", level: 8, race: "Dragão", atk: 3000, def: 2500, desc: "Este lendário dragão é uma poderosa máquina de destruição.", rarity: "lendaria", character: "seto-kaiba", imageUrl: cardImageUrl(89631139) },
+  { id: 74677422, name: "Dragão Negro de Olhos Vermelhos", kind: "monster", attribute: "DARK", level: 7, race: "Dragão", atk: 2400, def: 2000, desc: "Um dragão feroz com um ataque mortal.", rarity: "ultra", character: "joey-wheeler", imageUrl: cardImageUrl(74677422) },
+  { id: 33396948, name: "Exodia, o Proibido", kind: "monster", attribute: "DARK", level: 3, race: "Mago", atk: 1000, def: 1000, desc: "Reúna as 5 peças na mão para vencer o Duelo.", rarity: "lendaria", character: "yugi-muto", imageUrl: cardImageUrl(33396948) },
+  { id: 10000020, name: "Slifer, o Dragão Celeste", kind: "monster", attribute: "DIVINE", level: 10, race: "Divino", atk: null, def: null, desc: "Ganha 1000 ATK/DEF para cada carta na sua mão.", rarity: "lendaria", character: "marik-ishtar", imageUrl: cardImageUrl(10000020) },
+  { id: 10000000, name: "Obelisco, o Atormentador", kind: "monster", attribute: "DIVINE", level: 10, race: "Divino", atk: 4000, def: 4000, desc: "Requer 3 Tributos para ser Invocado.", rarity: "lendaria", character: "seto-kaiba", imageUrl: cardImageUrl(10000000) },
+  { id: 10000010, name: "Dragão Alado de Rá", kind: "monster", attribute: "DIVINE", level: 10, race: "Divino", atk: null, def: null, desc: "O mais poderoso dos Deuses Egípcios.", rarity: "lendaria", character: "marik-ishtar", imageUrl: cardImageUrl(10000010) },
+  { id: 70781052, name: "Caveira Invocada", kind: "monster", attribute: "DARK", level: 6, race: "Demônio", atk: 2500, def: 1200, desc: "Um demônio com poderes sombrios para confundir o inimigo.", rarity: "super", character: "yugi-muto", imageUrl: cardImageUrl(70781052) },
+  { id: 40640057, name: "Kuriboh", kind: "monster", attribute: "DARK", level: 1, race: "Demônio", atk: 300, def: 200, desc: "Descarte esta carta para reduzir a 0 o dano de batalha.", rarity: "comum", character: "yugi-muto", imageUrl: cardImageUrl(40640057) },
+  { id: 24094653, name: "Polimerização", kind: "spell", desc: "Invoque por Fusão 1 Monstro de Fusão do seu Deck Adicional.", rarity: "rara", imageUrl: cardImageUrl(24094653) },
+  { id: 83764718, name: "Monstro Renascido", kind: "spell", desc: "Escolha 1 monstro em qualquer Cemitério; Invoque-o por Invocação-Especial.", rarity: "super", imageUrl: cardImageUrl(83764718) },
+  { id: 44095762, name: "Força do Espelho", kind: "trap", desc: "Quando um monstro do oponente declarar um ataque: destrua todos os monstros em Posição de Ataque dele.", rarity: "super", imageUrl: cardImageUrl(44095762) },
 ];
 
 export interface Character {
@@ -40,23 +71,23 @@ export interface Character {
   name: string;
   description: string;
   style: string;
-  imageUrl?: string;
+  imageUrl: string;
 }
 
 export const CHARACTERS: Character[] = [
-  { id: "yugi-muto", name: "Yugi Muto", description: "Gentil e estratégico, guarda o Enigma do Milênio.", style: "Equilibrado" },
-  { id: "yami-yugi", name: "Yami Yugi", description: "O Faraó sem nome, mestre dos jogos.", style: "Magos e combos" },
-  { id: "seto-kaiba", name: "Seto Kaiba", description: "Gênio frio e implacável da Kaiba Corp.", style: "Força bruta" },
-  { id: "joey-wheeler", name: "Joey Wheeler", description: "Coração de duelista e muita sorte.", style: "Sorte e guerreiros" },
-  { id: "tea-gardner", name: "Téa Gardner", description: "A amizade é sua maior carta.", style: "Suporte" },
-  { id: "tristan-taylor", name: "Tristan Taylor", description: "Leal e destemido.", style: "Máquinas" },
-  { id: "mai-valentine", name: "Mai Valentine", description: "Elegante e calculista.", style: "Harpias" },
-  { id: "pegasus", name: "Maximillion Pegasus", description: "Criador do jogo, dono do Olho do Milênio.", style: "Toons" },
-  { id: "yami-bakura", name: "Yami Bakura", description: "Espírito sombrio do Anel do Milênio.", style: "Ocultismo" },
-  { id: "marik-ishtar", name: "Marik Ishtar", description: "Líder dos Ghouls Raros.", style: "Controle" },
-  { id: "ishizu-ishtar", name: "Ishizu Ishtar", description: "Guardiã que enxerga o futuro.", style: "Cemitério" },
-  { id: "rex-raptor", name: "Rex Raptor", description: "Especialista em dinossauros.", style: "Dinossauros" },
-  { id: "weevil-underwood", name: "Weevil Underwood", description: "Astuto colecionador de insetos.", style: "Insetos" },
-  { id: "mako-tsunami", name: "Mako Tsunami", description: "Duelista dos mares.", style: "Água" },
-  { id: "bandit-keith", name: "Bandit Keith", description: "Campeão americano sem escrúpulos.", style: "Máquinas" },
+  { id: "yugi-muto", name: "Yugi Muto", description: "Gentil e estratégico, guarda o Enigma do Milênio.", style: "Equilibrado", imageUrl: yugiMuto },
+  { id: "yami-yugi", name: "Yami Yugi", description: "O Faraó sem nome, mestre dos jogos.", style: "Magos e combos", imageUrl: yamiYugi },
+  { id: "seto-kaiba", name: "Seto Kaiba", description: "Gênio frio e implacável da Kaiba Corp.", style: "Força bruta", imageUrl: setoKaiba },
+  { id: "joey-wheeler", name: "Joey Wheeler", description: "Coração de duelista e muita sorte.", style: "Sorte e guerreiros", imageUrl: joeyWheeler },
+  { id: "tea-gardner", name: "Téa Gardner", description: "A amizade é sua maior carta.", style: "Suporte", imageUrl: teaGardner },
+  { id: "tristan-taylor", name: "Tristan Taylor", description: "Leal e destemido.", style: "Máquinas", imageUrl: tristanTaylor },
+  { id: "mai-valentine", name: "Mai Valentine", description: "Elegante e calculista.", style: "Harpias", imageUrl: maiValentine },
+  { id: "pegasus", name: "Maximillion Pegasus", description: "Criador do jogo, dono do Olho do Milênio.", style: "Toons", imageUrl: pegasus },
+  { id: "yami-bakura", name: "Yami Bakura", description: "Espírito sombrio do Anel do Milênio.", style: "Ocultismo", imageUrl: yamiBakura },
+  { id: "marik-ishtar", name: "Marik Ishtar", description: "Líder dos Ghouls Raros.", style: "Controle", imageUrl: marikIshtar },
+  { id: "ishizu-ishtar", name: "Ishizu Ishtar", description: "Guardiã que enxerga o futuro.", style: "Cemitério", imageUrl: ishizuIshtar },
+  { id: "rex-raptor", name: "Rex Raptor", description: "Especialista em dinossauros.", style: "Dinossauros", imageUrl: rexRaptor },
+  { id: "weevil-underwood", name: "Weevil Underwood", description: "Astuto colecionador de insetos.", style: "Insetos", imageUrl: weevilUnderwood },
+  { id: "mako-tsunami", name: "Mako Tsunami", description: "Duelista dos mares.", style: "Água", imageUrl: makoTsunami },
+  { id: "bandit-keith", name: "Bandit Keith", description: "Campeão americano sem escrúpulos.", style: "Máquinas", imageUrl: banditKeith },
 ];
