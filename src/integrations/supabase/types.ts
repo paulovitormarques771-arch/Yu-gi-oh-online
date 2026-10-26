@@ -14,6 +14,67 @@ export type Database = {
   }
   public: {
     Tables: {
+      deck_cards: {
+        Row: {
+          card_id: number
+          copies: number
+          deck_id: string
+        }
+        Insert: {
+          card_id: number
+          copies: number
+          deck_id: string
+        }
+        Update: {
+          card_id?: number
+          copies?: number
+          deck_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deck_cards_deck_id_fkey"
+            columns: ["deck_id"]
+            isOneToOne: false
+            referencedRelation: "decks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      decks: {
+        Row: {
+          created_at: string
+          id: string
+          is_main: boolean
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_main?: boolean
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_main?: boolean
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
