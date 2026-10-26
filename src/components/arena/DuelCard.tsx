@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import type { CardData } from "@/data/catalog";
+import { ATTRIBUTE_LABELS, type CardData } from "@/data/catalog";
 
 const kindStyle: Record<CardData["kind"], string> = {
   monster: "from-gold/30 via-card to-card",
@@ -15,35 +15,42 @@ export function DuelCard({ card, className, interactive = true }: { card: CardDa
       {...(interactive ? { whileHover: { rotateY: 10, rotateX: -6, y: -10, scale: 1.04 } } : {})}
       transition={{ type: "spring", stiffness: 220, damping: 18 }}
       className={cn(
-        "preserve-3d relative aspect-[59/86] w-44 rounded-lg border-2 p-2 shadow-2xl bg-gradient-to-b",
+        "preserve-3d relative aspect-[59/86] w-44 overflow-hidden rounded-lg border-2 shadow-2xl bg-gradient-to-b",
         kindStyle[card.kind],
         legendary ? "border-gold glow-gold" : "border-border",
         className,
       )}
     >
-      <div className="flex items-center justify-between gap-1">
-        <span className="truncate font-display text-[11px] font-bold leading-tight">{card.name}</span>
-        {card.attribute && <span className="shrink-0 rounded-full bg-background/70 px-1 text-[8px] text-muted-foreground">{card.attribute}</span>}
-      </div>
-      {card.level && <div className="mt-0.5 text-right text-[9px] tracking-widest text-gold">{"★".repeat(Math.min(card.level, 12))}</div>}
-      <div className="mt-1 flex aspect-square items-center justify-center overflow-hidden rounded border border-border bg-background/60">
-        {card.imageUrl ? (
-          <img src={card.imageUrl} alt={card.name} className="h-full w-full object-cover" />
-        ) : (
-          <div className="relative flex h-full w-full items-center justify-center">
-            <div className="absolute h-3/4 w-3/4 rounded-full border border-dashed border-primary/40 animate-rune" />
-            <span className="px-2 text-center font-display text-[10px] text-muted-foreground">{card.name}<br /><span className="text-[8px] opacity-70">arte autorizada pendente</span></span>
-          </div>
-        )}
-      </div>
-      <p className="mt-1 line-clamp-3 text-[9px] leading-snug text-muted-foreground">{card.text}</p>
-      {card.kind === "monster" ? (
-        <div className="absolute bottom-1.5 right-2 text-[10px] font-bold">
-          ATK/{card.atk ?? "?"} DEF/{card.def ?? "?"}
-        </div>
+      {card.imageUrl ? (
+        <img
+          src={card.imageUrl}
+          alt={card.name}
+          loading="lazy"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
       ) : (
-        <div className="absolute bottom-1.5 right-2 text-[10px] font-bold uppercase text-primary">{card.kind === "spell" ? "Magia" : "Armadilha"}</div>
+        <div className="absolute inset-0 flex items-center justify-center p-2">
+          <div className="absolute h-3/4 w-3/4 rounded-full border border-dashed border-primary/40 animate-rune" />
+          <span className="px-2 text-center font-display text-[10px] text-muted-foreground">{card.name}</span>
+        </div>
       )}
+      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-background via-background/85 to-transparent p-2 pt-6">
+        <p className="truncate font-display text-[11px] font-bold leading-tight">{card.name}</p>
+        <div className="mt-0.5 flex items-center justify-between text-[9px] text-muted-foreground">
+          <span>
+            {card.kind === "monster"
+              ? `${card.attribute ? (ATTRIBUTE_LABELS[card.attribute] ?? card.attribute) : ""}${card.level ? ` · ★${card.level}` : ""}`
+              : card.kind === "spell"
+                ? "Magia"
+                : "Armadilha"}
+          </span>
+          {card.kind === "monster" && (
+            <span className="font-bold text-foreground">
+              {card.atk ?? "?"}/{card.def ?? "?"}
+            </span>
+          )}
+        </div>
+      </div>
     </motion.div>
   );
 }

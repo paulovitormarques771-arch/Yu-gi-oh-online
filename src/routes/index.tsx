@@ -73,8 +73,8 @@ function Landing() {
           {CHARACTERS.slice(0, 10).map((ch, i) => (
             <motion.div key={ch.id} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: (i % 5) * 0.08 }}
               className="rounded-lg border border-border bg-card/70 p-4 transition hover:border-primary hover:glow-primary">
-              <div className="mb-3 flex aspect-square items-center justify-center rounded-md bg-secondary font-display text-3xl text-primary">
-                {ch.name.split(" ").map((w) => w[0]).join("").slice(0, 2)}
+              <div className="mb-3 aspect-square overflow-hidden rounded-md bg-secondary">
+                <img src={ch.imageUrl} alt={ch.name} loading="lazy" width={768} height={1024} className="h-full w-full object-cover" />
               </div>
               <h3 className="text-sm font-bold">{ch.name}</h3>
               <p className="text-xs text-muted-foreground">{ch.style}</p>

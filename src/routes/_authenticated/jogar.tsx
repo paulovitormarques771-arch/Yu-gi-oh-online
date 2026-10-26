@@ -3,11 +3,14 @@ import { useMemo, useState } from "react";
 import { Bot, History, Layers, Library, Link2, UserRound, Users, Swords } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { CARDS, CHARACTERS } from "@/data/catalog";
+import { CHARACTERS } from "@/data/catalog";
+import { ALL_CARDS } from "@/data/cards";
 import { DuelCard } from "@/components/arena/DuelCard";
 import { MagicBackdrop } from "@/components/arena/MagicBackdrop";
 import { SiteNav } from "@/components/arena/SiteNav";
 import { ProfilePanel } from "@/components/arena/ProfilePanel";
+import { DeckBuilder } from "@/components/arena/DeckBuilder";
+import { DeckList } from "@/components/arena/DeckList";
 
 export const Route = createFileRoute("/_authenticated/jogar")({
   head: () => ({
@@ -44,11 +47,13 @@ function Soon({ title, text }: { title: string; text: string }) {
 }
 
 function Jogar() {
+  const [tab, setTab] = useState("perfil");
+  const [editingDeck, setEditingDeck] = useState<string | null>(null);
   const [selected, setSelected] = useState("yugi-muto");
   const [q, setQ] = useState("");
   const [kind, setKind] = useState<"all" | "monster" | "spell" | "trap">("all");
   const list = useMemo(
-    () => CARDS.filter((c) => (kind === "all" || c.kind === kind) && c.name.toLowerCase().includes(q.toLowerCase())),
+    () => ALL_CARDS.filter((c) => (kind === "all" || c.kind === kind) && c.name.toLowerCase().includes(q.toLowerCase())),
     [q, kind],
   );
 
@@ -58,7 +63,7 @@ function Jogar() {
       <SiteNav />
       <main className="mx-auto max-w-7xl px-4 pb-20 pt-24">
         <h1 className="text-3xl font-black md:text-5xl">Central do <span className="text-gold">Duelista</span></h1>
-        <Tabs defaultValue="perfil" className="mt-8">
+        <Tabs value={tab} onValueChange={setTab} className="mt-8">
           <TabsList className="flex h-auto flex-wrap justify-start gap-1 bg-card/70">
             {tabs.map((t) => (
               <TabsTrigger key={t.v} value={t.v} className="gap-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
@@ -74,8 +79,8 @@ function Jogar() {
               {CHARACTERS.map((ch) => (
                 <button key={ch.id} onClick={() => setSelected(ch.id)}
                   className={`rounded-lg border bg-card/70 p-4 text-left transition hover:border-primary ${selected === ch.id ? "border-gold glow-gold" : "border-border"}`}>
-                  <div className="mb-3 flex aspect-square items-center justify-center rounded-md bg-secondary font-display text-2xl text-primary">
-                    {ch.name.split(" ").map((w) => w[0]).join("").slice(0, 2)}
+                  <div className="mb-3 aspect-square overflow-hidden rounded-md bg-secondary">
+                    <img src={ch.imageUrl} alt={ch.name} loading="lazy" width={768} height={1024} className="h-full w-full object-cover" />
                   </div>
                   <p className="font-bold">{ch.name}</p>
                   <p className="text-xs text-primary">{ch.style}</p>
@@ -86,7 +91,7 @@ function Jogar() {
           </TabsContent>
 
           <TabsContent value="colecao" className="mt-6">
-            <div className="mb-6 flex flex-wrap gap-2">
+            <div className="mb-6 flex flex-wrap items-center gap-2">
               <Input placeholder="Buscar carta..." value={q} onChange={(e) => setQ(e.target.value)} className="max-w-xs bg-card" />
               {(["all", "monster", "spell", "trap"] as const).map((k) => (
                 <button key={k} onClick={() => setKind(k)}
@@ -94,12 +99,24 @@ function Jogar() {
                   {{ all: "Todas", monster: "Monstros", spell: "Magias", trap: "Armadilhas" }[k]}
                 </button>
               ))}
+              <span className="text-sm text-muted-foreground">{list.length} cartas da era clássica do anime</span>
             </div>
             <div className="flex flex-wrap gap-5">{list.map((c) => <DuelCard key={c.id} card={c} />)}</div>
           </TabsContent>
 
-          <TabsContent value="criar" className="mt-6"><Soon title="Construtor de decks" text="Até 45 cartas e no máximo 3 cópias — chega na Etapa 3." /></TabsContent>
-          <TabsContent value="decks" className="mt-6"><Soon title="Meus decks" text="Salvar, renomear, duplicar e escolher deck principal — Etapa 3." /></TabsContent>
+          <TabsContent value="criar" className="mt-6">
+            <DeckBuilder
+              deckId={editingDeck}
+              onSaved={() => { setEditingDeck(null); setTab("decks"); }}
+              onCancel={() => { setEditingDeck(null); setTab("decks"); }}
+            />
+          </TabsContent>
+          <TabsContent value="decks" className="mt-6">
+            <DeckList
+              onEdit={(id) => { setEditingDeck(id); setTab("criar"); }}
+              onCreate={() => { setEditingDeck(null); setTab("criar"); }}
+            />
+          </TabsContent>
           <TabsContent value="ia" className="mt-6">
             <div className="rounded-xl border border-border bg-card/60 p-10 text-center">
               <Bot className="mx-auto h-10 w-10 text-primary" />
