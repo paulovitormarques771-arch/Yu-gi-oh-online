@@ -85,7 +85,7 @@ export function ProfilePanel() {
         <h3 className="mt-4 text-2xl font-bold">{profile.nickname}</h3>
         <p className="text-sm text-muted-foreground">{user?.email}</p>
         <p className="mt-2 text-xs uppercase tracking-widest text-muted-foreground">
-          Duelista desde {new Date(profile.created_at.replace(" ", "T")).toLocaleDateString("pt-BR")}
+          Duelista desde {new Date(profile.created_at).toLocaleDateString("pt-BR")}
         </p>
         <Button variant="outline" onClick={signOut} className="mt-6 w-full gap-2">
           <LogOut className="h-4 w-4" /> Sair da conta

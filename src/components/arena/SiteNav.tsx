@@ -11,7 +11,7 @@ export function SiteNav() {
   const navigate = useNavigate();
 
   const { data: profile } = useQuery({
-    queryKey: ["profile", user?.id],
+    queryKey: ["profile-nav", user?.id],
     enabled: !!user,
     queryFn: async () => {
       const { data } = await supabase
