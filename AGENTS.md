@@ -12,3 +12,4 @@
 ## Duel Arena
 - Exactly three main routes: `/`, `/jogar`, `/duelo/$roomId`; shared arena UI lives in `src/components/arena/` — keeps the spec's page structure.
 - Card/character data lives in `src/data/catalog.ts` (to move to the database later); cards render named placeholders unless an authorized `imageUrl` exists — no unauthorized official art.
+- Auth: email/password + Google + Lovable via Lovable Cloud; `/auth` (public, with `?redirect=` redirect-back) and `/reset-password` are the only auth routes; `/jogar` lives under the client-only `_authenticated` gate (ssr: false, localStorage session); root owns the single `onAuthStateChange` listener (router.invalidate + OAuth `auth_redirect` return via sessionStorage); sign-out = cancelQueries → clear → signOut → replace to `/auth`.

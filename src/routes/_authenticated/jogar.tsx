@@ -7,8 +7,9 @@ import { CARDS, CHARACTERS } from "@/data/catalog";
 import { DuelCard } from "@/components/arena/DuelCard";
 import { MagicBackdrop } from "@/components/arena/MagicBackdrop";
 import { SiteNav } from "@/components/arena/SiteNav";
+import { ProfilePanel } from "@/components/arena/ProfilePanel";
 
-export const Route = createFileRoute("/jogar")({
+export const Route = createFileRoute("/_authenticated/jogar")({
   head: () => ({
     meta: [
       { title: "Central do Duelista — Duel Arena" },
@@ -57,7 +58,7 @@ function Jogar() {
       <SiteNav />
       <main className="mx-auto max-w-7xl px-4 pb-20 pt-24">
         <h1 className="text-3xl font-black md:text-5xl">Central do <span className="text-gold">Duelista</span></h1>
-        <Tabs defaultValue="personagem" className="mt-8">
+        <Tabs defaultValue="perfil" className="mt-8">
           <TabsList className="flex h-auto flex-wrap justify-start gap-1 bg-card/70">
             {tabs.map((t) => (
               <TabsTrigger key={t.v} value={t.v} className="gap-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
@@ -66,7 +67,7 @@ function Jogar() {
             ))}
           </TabsList>
 
-          <TabsContent value="perfil" className="mt-6"><Soon title="Conta e perfil" text="Cadastro, login, nickname único, avatar e preferências chegam na Etapa 2." /></TabsContent>
+          <TabsContent value="perfil" className="mt-6"><ProfilePanel /></TabsContent>
 
           <TabsContent value="personagem" className="mt-6">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
@@ -110,7 +111,7 @@ function Jogar() {
             </div>
           </TabsContent>
           <TabsContent value="convidar" className="mt-6"><Soon title="Convidar amigo" text="Salas online com link de convite chegam na Etapa 6." /></TabsContent>
-          <TabsContent value="historico" className="mt-6"><Soon title="Histórico de duelos" text="Suas partidas serão registradas após a Etapa 2." /></TabsContent>
+          <TabsContent value="historico" className="mt-6"><Soon title="Histórico de duelos" text="Suas partidas serão registradas a partir dos próximos duelos." /></TabsContent>
         </Tabs>
       </main>
     </div>
