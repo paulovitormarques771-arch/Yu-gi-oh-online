@@ -8,3 +8,7 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+## Duel Arena
+- Exactly three main routes: `/`, `/jogar`, `/duelo/$roomId`; shared arena UI lives in `src/components/arena/` — keeps the spec's page structure.
+- Card/character data lives in `src/data/catalog.ts` (to move to the database later); cards render named placeholders unless an authorized `imageUrl` exists — no unauthorized official art.
