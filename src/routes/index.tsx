@@ -58,12 +58,15 @@ function Landing() {
 
       {/* Vídeo */}
       <Section title="O despertar da arena" kicker="Trailer">
-        <div className="mx-auto flex aspect-video max-w-4xl items-center justify-center rounded-xl border border-border bg-card/60 glow-magic">
-          <div className="text-center text-muted-foreground">
-            <Swords className="mx-auto mb-3 h-10 w-10 text-primary" />
-            <p className="font-display">Espaço reservado para vídeo autorizado</p>
-            <p className="text-sm">O vídeo começará sem som e só será carregado quando disponível.</p>
-          </div>
+        <div className="mx-auto aspect-video max-w-4xl overflow-hidden rounded-xl border border-border bg-card/60 glow-magic">
+          <iframe
+            className="h-full w-full"
+            src="https://www.youtube-nocookie.com/embed/5fUa75OWUlY?start=0&end=90&mute=1&rel=0&modestbranding=1"
+            title="Abertura de Yu-Gi-Oh!"
+            loading="lazy"
+            allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
         </div>
       </Section>
 
