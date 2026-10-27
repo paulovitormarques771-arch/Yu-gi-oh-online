@@ -20,7 +20,6 @@ export const Route = createFileRoute("/duelo/$roomId")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  ssr: false, // decks are shuffled randomly in the browser
   component: Duelo,
 });
 
@@ -32,6 +31,13 @@ function newDuel(vsAI = false) {
 }
 
 function Duelo() {
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
+  if (!ready) return <div className="min-h-screen"><MagicBackdrop /></div>;
+  return <Arena />;
+}
+
+function Arena() {
   const { roomId } = Route.useParams();
   const vsAI = roomId === "treino";
   const [s, setS] = useState<DuelState>(() => newDuel(vsAI));
