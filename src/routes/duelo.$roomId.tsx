@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { ArrowLeft, Flag, RotateCcw } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { aiNextAction } from "@/lib/duel-ai";
 import { toast } from "sonner";
 import { ALL_CARDS } from "@/data/cards";
 import { DuelCard } from "@/components/arena/DuelCard";
@@ -24,18 +25,35 @@ export const Route = createFileRoute("/duelo/$roomId")({
 
 const PHASE_LABEL = { draw: "Compra", main1: "Principal 1", battle: "Batalha", main2: "Principal 2", end: "Final" } as const;
 
-function newDuel() {
+function newDuel(vsAI = false) {
   const seed = Date.now() % 100000;
-  return createDuel(["Jogador 1", "Jogador 2"], [quickDeck(ALL_CARDS, seed), quickDeck(ALL_CARDS, seed + 99)], seed);
+  return createDuel(vsAI ? ["Você", "IA Duelista"] : ["Jogador 1", "Jogador 2"], [quickDeck(ALL_CARDS, seed), quickDeck(ALL_CARDS, seed + 99)], seed);
 }
 
 function Duelo() {
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
+  if (!ready) return <div className="min-h-screen"><MagicBackdrop /></div>;
+  return <Arena />;
+}
+
+function Arena() {
   const { roomId } = Route.useParams();
-  const [s, setS] = useState<DuelState>(newDuel);
+  const vsAI = roomId === "treino";
+  const [s, setS] = useState<DuelState>(() => newDuel(vsAI));
+  const aiTurn = vsAI && s.active === 1 && s.winner === null;
+  useEffect(() => {
+    if (!aiTurn) return;
+    const t = setTimeout(() => {
+      setS((cur) => { try { return applyAction(cur, aiNextAction(cur)); } catch { return applyAction(cur, { type: "nextPhase" }); } });
+    }, 700);
+    return () => clearTimeout(t);
+  }, [aiTurn, s]);
   const [sel, setSel] = useState<string | null>(null); // hand card or attacker uid
   const [tributes, setTributes] = useState<string[]>([]);
-  const me = s.players[s.active];
-  const oppId = (1 - s.active) as PlayerId;
+  const view: PlayerId = vsAI ? 0 : s.active;
+  const me = s.players[view];
+  const oppId = (1 - view) as PlayerId;
   const opp = s.players[oppId];
 
   const act = (a: Action) => {
@@ -81,8 +99,10 @@ function Duelo() {
           {s.winner !== null ? (
             <>
               <p className="font-display text-xl text-gold">{s.players[s.winner].name} venceu!</p>
-              <Btn onClick={() => setS(newDuel())}><RotateCcw className="h-4 w-4" /> Novo duelo</Btn>
+              <Btn onClick={() => setS(newDuel(vsAI))}><RotateCcw className="h-4 w-4" /> Novo duelo</Btn>
             </>
+          ) : aiTurn ? (
+            <p className="font-display text-sm text-magic animate-pulse">A IA está jogando… ({PHASE_LABEL[s.phase]})</p>
           ) : s.phase === "draw" ? (
             <Btn primary onClick={() => act({ type: "draw" })}>Comprar carta ({me.name})</Btn>
           ) : (
