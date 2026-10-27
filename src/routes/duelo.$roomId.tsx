@@ -20,6 +20,7 @@ export const Route = createFileRoute("/duelo/$roomId")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  ssr: false, // decks are shuffled randomly in the browser
   component: Duelo,
 });
 
