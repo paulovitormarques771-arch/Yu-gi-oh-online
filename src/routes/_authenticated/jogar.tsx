@@ -121,9 +121,9 @@ function Jogar() {
             <div className="rounded-xl border border-border bg-card/60 p-10 text-center">
               <Bot className="mx-auto h-10 w-10 text-primary" />
               <h3 className="mt-2 text-2xl font-bold">Treinar contra a IA</h3>
-              <p className="mt-2 text-muted-foreground">O oponente controlado pelo computador chega na Etapa 5. Já é possível conhecer a arena.</p>
+              <p className="mt-2 text-muted-foreground">Enfrente um oponente controlado pelo computador que compra, invoca e ataca.</p>
               <Link to="/duelo/$roomId" params={{ roomId: "treino" }} className="mt-6 inline-flex items-center gap-2 rounded-md bg-energy px-6 py-3 font-display font-bold text-primary-foreground glow-primary">
-                <Swords className="h-5 w-5" /> Entrar na arena
+                <Swords className="h-5 w-5" /> Duelar contra a IA
               </Link>
             </div>
           </TabsContent>
