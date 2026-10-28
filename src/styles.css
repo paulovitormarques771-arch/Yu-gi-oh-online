@@ -165,3 +165,7 @@
 @utility hero-fog-rev { animation: hero-fog 24s ease-in-out infinite alternate-reverse; }
 @utility hero-twinkle { animation-name: hero-twinkle; animation-iteration-count: infinite; animation-timing-function: ease-in-out; opacity: 0; }
 @media (prefers-reduced-motion: reduce) { .hero-zoom, .hero-pulse, .hero-flash, .hero-fog, .hero-fog-rev, .hero-twinkle { animation: none; } }
+@keyframes arena-sweep { from { transform: translateX(0) skewX(-20deg); } to { transform: translateX(400%) skewX(-20deg); } }
+@utility arena-sweep { animation: arena-sweep 8s linear infinite; mix-blend-mode: screen; }
+@utility neon-field { box-shadow: 0 0 18px color-mix(in oklab, var(--primary) 70%, transparent), inset 0 0 30px color-mix(in oklab, var(--magic) 35%, transparent); }
+@media (prefers-reduced-motion: reduce) { .arena-sweep { animation: none; } }
