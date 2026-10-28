@@ -15,8 +15,8 @@ export function ArenaBackdrop() {
   }, []);
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-      <div className="hero-zoom absolute inset-[-4%] bg-cover bg-center opacity-70" style={{ backgroundImage: `url(${bg.url})` }} />
-      <div className="absolute inset-0 bg-background/45" />
+      <div className="hero-zoom absolute inset-[-4%] bg-cover bg-center opacity-60 blur-[3px]" style={{ backgroundImage: `url(${bg.url})` }} />
+      <div className="absolute inset-0 bg-background/55" />
       <div className="arena-sweep absolute -left-1/2 top-0 h-full w-1/2 bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
       <div className="arena-sweep absolute -left-1/2 top-0 h-full w-1/3 bg-gradient-to-r from-transparent via-magic/20 to-transparent" style={{ animationDelay: "-4s", animationDuration: "11s" }} />
       <div className="hero-pulse absolute -left-[10%] top-[10%] h-[50vmin] w-[50vmin] rounded-full bg-magic/30 blur-3xl" />
