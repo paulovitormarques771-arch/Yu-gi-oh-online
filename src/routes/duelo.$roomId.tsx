@@ -1,6 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { ArrowLeft, Flag, RotateCcw } from "lucide-react";
+import { ArrowLeft, Flag, RotateCcw, ZoomIn } from "lucide-react";
+import { CardZoom } from "@/components/arena/CardZoom";
+import { ArenaBackdrop } from "@/components/arena/ArenaBackdrop";
+import type { CardData } from "@/data/catalog";
 import { useEffect, useState } from "react";
 import { aiNextAction } from "@/lib/duel-ai";
 import { toast } from "sonner";
@@ -33,7 +36,7 @@ function newDuel(vsAI = false) {
 function Duelo() {
   const [ready, setReady] = useState(false);
   useEffect(() => setReady(true), []);
-  if (!ready) return <div className="min-h-screen"><MagicBackdrop /></div>;
+  if (!ready) return <div className="min-h-screen"><ArenaBackdrop /></div>;
   return <Arena />;
 }
 
@@ -50,6 +53,7 @@ function Arena() {
     return () => clearTimeout(t);
   }, [aiTurn, s]);
   const [sel, setSel] = useState<string | null>(null); // hand card or attacker uid
+  const [zoom, setZoom] = useState<{ card: CardData; owner: string } | null>(null);
   const [tributes, setTributes] = useState<string[]>([]);
   const view: PlayerId = vsAI ? 0 : s.active;
   const me = s.players[view];
@@ -66,7 +70,8 @@ function Arena() {
 
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden">
-      <MagicBackdrop />
+      <ArenaBackdrop />
+      <CardZoom card={zoom?.card ?? null} owner={zoom?.owner} onClose={() => setZoom(null)} />
       <div className="flex items-center justify-between gap-2 p-4">
         <Link to="/jogar" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /> Sair</Link>
         <p className="font-display text-sm tracking-widest text-gold">SALA {roomId.toUpperCase()} · TURNO {s.turn}</p>
@@ -74,11 +79,11 @@ function Arena() {
       </div>
 
       <div className="perspective-arena flex flex-1 items-center justify-center px-4">
-        <div className="w-full max-w-2xl space-y-3 rounded-2xl border border-primary/40 bg-card/30 p-4 glow-primary" style={{ transform: "rotateX(18deg)" }}>
-          <Row zones={opp.spells.map((x) => x && { faceDown: true, card: x.card })} enemy />
+        <div className="w-full max-w-2xl space-y-3 rounded-2xl border border-primary/40 bg-background/40 p-4 neon-field backdrop-blur-[2px]" style={{ transform: "rotateX(18deg)" }}>
+          <Row zones={opp.spells.map((x) => x && { faceDown: true, card: x.card })} enemy onZoom={(c) => setZoom({ card: c, owner: opp.name })} />
           <Row enemy zones={opp.monsters.map((m) => m && { faceDown: m.faceDown, card: m.card, def: m.position === "def" })}
             onPick={(i) => { const t = opp.monsters[i]; if (selAttacker && t) act({ type: "attack", attackerUid: selAttacker.uid, targetUid: t.uid }); }}
-            highlight={!!selAttacker} />
+            highlight={!!selAttacker} onZoom={(c) => setZoom({ card: c, owner: opp.name })} />
           <div className="flex items-center gap-2">
             <div className="h-px flex-1 bg-energy" />
             <span className="font-display text-xs text-gold">{PHASE_LABEL[s.phase].toUpperCase()}</span>
@@ -89,8 +94,8 @@ function Arena() {
               const m = me.monsters[i]; if (!m) return;
               if (need > 0) setTributes((t) => t.includes(m.uid) ? t.filter((x) => x !== m.uid) : [...t, m.uid].slice(0, need));
               else setSel(sel === m.uid ? null : m.uid);
-            }} />
-          <Row zones={me.spells.map((x) => x && { faceDown: false, card: x.card, dim: true })} />
+            }} onZoom={(c) => setZoom({ card: c, owner: me.name })} />
+          <Row zones={me.spells.map((x) => x && { faceDown: false, card: x.card, dim: true })} onZoom={(c) => setZoom({ card: c, owner: me.name })} />
         </div>
       </div>
 
@@ -133,10 +138,13 @@ function Arena() {
           <Lp name={me.name} lp={me.lp} deck={me.deck.length} hand={me.hand.length} />
           <div className="flex -space-x-8 overflow-x-auto pb-2">
             {me.hand.map((h, i) => (
-              <motion.button key={h.uid} initial={{ y: 120 }} animate={{ y: sel === h.uid ? -24 : 0 }} transition={{ delay: i * 0.03 }}
-                onClick={() => { setSel(sel === h.uid ? null : h.uid); setTributes([]); }} aria-label={h.card.name}>
-                <DuelCard card={h.card} interactive={false} className={`w-20 md:w-28 ${sel === h.uid ? "border-gold glow-gold" : ""}`} />
-              </motion.button>
+              <motion.div key={h.uid} className="relative" initial={{ y: 120 }} animate={{ y: sel === h.uid ? -24 : 0 }} transition={{ delay: i * 0.03 }}
+              >
+                <button type="button" onClick={() => { setSel(sel === h.uid ? null : h.uid); setTributes([]); }} aria-label={h.card.name}>
+                  <DuelCard card={h.card} interactive={false} className={`w-20 md:w-28 ${sel === h.uid ? "border-gold glow-gold" : ""}`} />
+                </button>
+                <ZoomBtn onClick={() => setZoom({ card: h.card, owner: me.name })} />
+              </motion.div>
             ))}
           </div>
           <div className="hidden max-h-24 w-56 overflow-y-auto text-right text-xs text-muted-foreground md:block">
@@ -150,12 +158,13 @@ function Arena() {
 
 type Zone = { faceDown: boolean; card: import("@/data/catalog").CardData; def?: boolean; dim?: boolean; selected?: boolean } | null;
 
-function Row({ zones, enemy, onPick, highlight }: { zones: Zone[]; enemy?: boolean; onPick?: (i: number) => void; highlight?: boolean }) {
+function Row({ zones, enemy, onPick, highlight, onZoom }: { zones: Zone[]; enemy?: boolean; onPick?: (i: number) => void; highlight?: boolean; onZoom?: (c: CardData) => void }) {
   return (
     <div className="grid grid-cols-5 gap-2">
       {zones.map((z, i) => (
-        <button key={i} type="button" onClick={() => onPick?.(i)}
-          className={`relative flex aspect-[59/86] items-center justify-center rounded border ${enemy ? "border-destructive/50" : "border-primary/60"} bg-background/40 ${highlight && z ? "ring-2 ring-destructive" : ""} ${z?.selected ? "ring-2 ring-gold" : ""}`}>
+        <div key={i} className="relative">
+        <button type="button" onClick={() => onPick?.(i)}
+          className={`relative flex w-full aspect-[59/86] items-center justify-center rounded border ${enemy ? "border-destructive/50" : "border-primary/60"} bg-background/40 ${highlight && z ? "ring-2 ring-destructive" : ""} ${z?.selected ? "ring-2 ring-gold" : ""}`}>
           {z && (z.faceDown ? (
             <div className={`h-full w-full rounded bg-magic/40 ${z.def ? "rotate-90 scale-75" : ""}`} />
           ) : (
@@ -164,6 +173,8 @@ function Row({ zones, enemy, onPick, highlight }: { zones: Zone[]; enemy?: boole
             </div>
           ))}
         </button>
+        {z && !(enemy && z.faceDown) && onZoom && <ZoomBtn onClick={() => onZoom(z.card)} />}
+        </div>
       ))}
     </div>
   );
@@ -182,6 +193,15 @@ function Btn({ children, onClick, primary }: { children: React.ReactNode; onClic
   return (
     <button onClick={onClick} className={`inline-flex items-center gap-1.5 rounded-md px-4 py-2 font-display text-sm font-bold ${primary ? "bg-energy text-primary-foreground glow-primary" : "border border-border bg-card"}`}>
       {children}
+    </button>
+  );
+}
+
+function ZoomBtn({ onClick }: { onClick: () => void }) {
+  return (
+    <button type="button" aria-label="Ver carta" onClick={(e) => { e.stopPropagation(); onClick(); }}
+      className="absolute right-1 top-1 z-10 rounded-full border border-primary/60 bg-background/80 p-1 text-primary transition hover:scale-110 hover:glow-primary">
+      <ZoomIn className="h-3.5 w-3.5" />
     </button>
   );
 }
