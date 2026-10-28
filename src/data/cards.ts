@@ -14,7 +14,7 @@ interface RawCard {
   desc: string;
 }
 
-// Full classic-era catalog (Legend of Blue Eyes, Metal Raiders, Pharaoh's
+// Classic-era catalog (Yu-Gi-Oh! Duel Monsters era sets + Egyptian Gods)
 // Servant, Spell Ruler) from the YGOPRODeck fan API.
 export const ALL_CARDS: CardData[] = (rawCards as RawCard[]).map((c) => ({
   ...c,

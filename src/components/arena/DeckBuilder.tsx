@@ -52,13 +52,16 @@ export function DeckBuilder({
     })();
   }, [deckId]);
 
-  const list = useMemo(
+  const [limit, setLimit] = useState(60);
+  useEffect(() => setLimit(60), [q, kind]);
+  const filtered = useMemo(
     () =>
       ALL_CARDS.filter(
         (c) => (kind === "all" || c.kind === kind) && c.name.toLowerCase().includes(q.toLowerCase()),
-      ).slice(0, 60),
+      ),
     [q, kind],
   );
+  const list = filtered.slice(0, limit);
   const total = totalCards(entries);
 
   function add(id: number) {
@@ -163,7 +166,15 @@ export function DeckBuilder({
             );
           })}
         </div>
-        <p className="mt-3 text-xs text-muted-foreground">Mostrando {list.length} de {ALL_CARDS.length} cartas — refine a busca para ver mais.</p>
+        <div className="mt-4 flex flex-col items-center gap-2">
+          <p className="text-xs text-muted-foreground">Mostrando {list.length} de {filtered.length} cartas</p>
+          {list.length < filtered.length && (
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setLimit((l) => l + 60)} className="rounded-md border border-primary/60 px-4 py-2 text-sm font-bold text-primary transition hover:bg-primary/10">Ver mais 60</button>
+              <button type="button" onClick={() => setLimit(filtered.length)} className="rounded-md border border-border px-4 py-2 text-sm text-muted-foreground transition hover:border-primary hover:text-primary">Ver todas</button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Deck panel */}
