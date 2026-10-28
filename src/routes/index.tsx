@@ -5,6 +5,7 @@ import { CARDS, CHARACTERS } from "@/data/catalog";
 import { DuelCard } from "@/components/arena/DuelCard";
 import { MagicBackdrop } from "@/components/arena/MagicBackdrop";
 import { DuelButton, SiteNav } from "@/components/arena/SiteNav";
+import { HeroBackground } from "@/components/arena/HeroBackground";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -27,6 +28,7 @@ function Landing() {
   const { scrollY } = useScroll();
   const yCards = useTransform(scrollY, [0, 600], [0, 180]);
   const yText = useTransform(scrollY, [0, 600], [0, -80]);
+  const yBg = useTransform(scrollY, [0, 800], [0, 200]);
 
   return (
     <div className="relative overflow-x-hidden">
@@ -34,7 +36,8 @@ function Landing() {
       <SiteNav />
 
       {/* Apresentação */}
-      <section className="relative flex min-h-screen flex-col items-center justify-center px-4 pt-20 text-center">
+      <section className="relative isolate flex min-h-screen flex-col items-center justify-center overflow-hidden px-4 pt-20 text-center">
+        <HeroBackground y={yBg} />
         <motion.div style={{ y: yText }} initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }}>
           <p className="mb-4 font-display text-sm tracking-[0.5em] text-primary">DUEL ARENA</p>
           <h1 className="max-w-4xl text-4xl font-black leading-tight md:text-7xl">
