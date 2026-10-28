@@ -6,7 +6,7 @@ import { ATTRIBUTE_LABELS, type CardData } from "@/data/catalog";
 const KIND_LABEL = { monster: "Monstro", spell: "Magia", trap: "Armadilha" } as const;
 
 /** Full-screen card viewer with large image and legible details. */
-export function CardZoom({ card, owner, onClose }: { card: CardData | null; owner?: string; onClose: () => void }) {
+export function CardZoom({ card, owner, onClose }: { card: CardData | null; owner?: string | undefined; onClose: () => void }) {
   useEffect(() => {
     if (!card) return;
     const k = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -61,7 +61,7 @@ export function CardZoom({ card, owner, onClose }: { card: CardData | null; owne
 function Tag({ children }: { children: React.ReactNode }) {
   return <span className="rounded border border-border bg-secondary px-2 py-0.5">{children}</span>;
 }
-function Stat({ label, value }: { label: string; value?: number | null }) {
+function Stat({ label, value }: { label: string; value?: number | null | undefined }) {
   return (
     <div className="rounded-lg border border-gold/50 bg-background/60 px-4 py-2 text-center">
       <p className="font-display text-xs text-gold">{label}</p>
