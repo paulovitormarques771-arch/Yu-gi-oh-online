@@ -9,7 +9,6 @@ import { aiNextAction } from "@/lib/duel-ai";
 import { toast } from "sonner";
 import { ALL_CARDS } from "@/data/cards";
 import { DuelCard } from "@/components/arena/DuelCard";
-import { MagicBackdrop } from "@/components/arena/MagicBackdrop";
 import { applyAction, canAttack, createDuel, quickDeck, tributesNeeded, type Action, type DuelState, type PlayerId } from "@/lib/duel-engine";
 
 export const Route = createFileRoute("/duelo/$roomId")({
