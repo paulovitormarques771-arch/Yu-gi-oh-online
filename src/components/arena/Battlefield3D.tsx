@@ -35,7 +35,7 @@ function CameraRig() {
   const { camera, size } = useThree();
   useEffect(() => {
     const aspect = size.width / size.height;
-    const distance = aspect < 1.05 ? 1.34 : .78;
+    const distance = aspect < 1.35 ? 1 : .78;
     camera.position.set(0, 10.7 * distance, 8.9 * distance);
     camera.lookAt(0, 0, 0.1);
     camera.updateProjectionMatrix();
