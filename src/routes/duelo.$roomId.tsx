@@ -1,14 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { motion } from "framer-motion";
-import { ArrowLeft, Flag, RotateCcw, ZoomIn } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, ChevronRight, Circle, Eye, Flag, Layers, RotateCcw, Shield, Sparkles, Swords, Zap } from "lucide-react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import { CardZoom } from "@/components/arena/CardZoom";
 import { ArenaBackdrop } from "@/components/arena/ArenaBackdrop";
-import type { CardData } from "@/data/catalog";
-import { useEffect, useState } from "react";
-import { aiNextAction } from "@/lib/duel-ai";
-import { toast } from "sonner";
+import { ArenaCard } from "@/components/arena/ArenaCard";
+import { ArenaHud } from "@/components/arena/ArenaHud";
+import { CHARACTERS, type CardData } from "@/data/catalog";
 import { ALL_CARDS } from "@/data/cards";
-import { DuelCard } from "@/components/arena/DuelCard";
+import { aiNextAction } from "@/lib/duel-ai";
+import { finishTurn, inspectableCard } from "@/lib/arena-presentation";
 import { applyAction, canAttack, createDuel, quickDeck, tributesNeeded, type Action, type DuelState, type PlayerId } from "@/lib/duel-engine";
 
 export const Route = createFileRoute("/duelo/$roomId")({
@@ -25,6 +27,7 @@ export const Route = createFileRoute("/duelo/$roomId")({
   component: Duelo,
 });
 
+const Field = lazy(() => import("@/components/arena/Battlefield3D").then((m) => ({ default: m.Battlefield3D })));
 const PHASE_LABEL = { draw: "Compra", main1: "Principal 1", battle: "Batalha", main2: "Principal 2", end: "Final" } as const;
 
 function newDuel(vsAI = false) {
@@ -35,7 +38,7 @@ function newDuel(vsAI = false) {
 function Duelo() {
   const [ready, setReady] = useState(false);
   useEffect(() => setReady(true), []);
-  if (!ready) return <div className="min-h-screen"><ArenaBackdrop /></div>;
+  if (!ready) return <div className="duel-screen"><ArenaBackdrop /></div>;
   return <Arena />;
 }
 
@@ -43,164 +46,129 @@ function Arena() {
   const { roomId } = Route.useParams();
   const vsAI = roomId === "treino";
   const [s, setS] = useState<DuelState>(() => newDuel(vsAI));
+  const [sel, setSel] = useState<string | null>(null);
+  const [target, setTarget] = useState<string | null>(null);
+  const [zoom, setZoom] = useState<{ card: CardData; owner: string; uid?: string; location?: "hand" | "monster" | "enemy" } | null>(null);
+  const [tributes, setTributes] = useState<string[]>([]);
+  const [grave, setGrave] = useState<"own" | "enemy">("own");
+  const logRef = useRef<HTMLDivElement>(null);
+  const view: PlayerId = vsAI ? 0 : s.active;
+  const opponentId: PlayerId = view === 0 ? 1 : 0;
+  const me = s.players[view];
+  const opponent = s.players[opponentId];
   const aiTurn = vsAI && s.active === 1 && s.winner === null;
+  const playable = !aiTurn && s.winner === null;
+  const main = s.phase === "main1" || s.phase === "main2";
+  const selHand = me.hand.find((h) => h.uid === sel);
+  const selMonster = me.monsters.find((m) => m?.uid === sel);
+  const need = selHand?.card.kind === "monster" ? tributesNeeded(selHand.card.level) : 0;
+  const canSummon = playable && main && !!selHand && selHand.card.kind === "monster" && !me.normalSummoned && tributes.length === need && (me.monsters.some((m) => !m) || need > 0) && !/Fusion|Ritual/.test(selHand.card.type ?? "");
+  const canSet = playable && main && !!selHand && (selHand.card.kind === "monster" ? canSummon : me.spells.some((m) => !m));
+  const attackReady = playable && !!selMonster && canAttack(s, selMonster) && (!opponent.monsters.some(Boolean) || !!target);
+  const selectedCard = selHand?.card ?? selMonster?.card;
+
   useEffect(() => {
     if (!aiTurn) return;
-    const t = setTimeout(() => {
-      setS((cur) => { try { return applyAction(cur, aiNextAction(cur)); } catch { return applyAction(cur, { type: "nextPhase" }); } });
+    const timer = setTimeout(() => {
+      setS((current) => { try { return applyAction(current, aiNextAction(current)); } catch { return applyAction(current, { type: "nextPhase" }); } });
     }, 700);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [aiTurn, s]);
-  const [sel, setSel] = useState<string | null>(null); // hand card or attacker uid
-  const [zoom, setZoom] = useState<{ card: CardData; owner: string } | null>(null);
-  const [tributes, setTributes] = useState<string[]>([]);
-  const view: PlayerId = vsAI ? 0 : s.active;
-  const me = s.players[view];
-  const oppId = (1 - view) as PlayerId;
-  const opp = s.players[oppId];
+  useEffect(() => { setSel(null); setTarget(null); setTributes([]); setZoom(null); }, [s.active]);
+  useEffect(() => { if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight; }, [s.log.length]);
 
-  const act = (a: Action) => {
-    try { setS(applyAction(s, a)); setSel(null); setTributes([]); }
-    catch (e) { toast.error((e as Error).message); }
+  const act = (action: Action) => {
+    if (!playable) return;
+    try { const next = applyAction(s, action); setS(next); setSel(null); setTarget(null); setTributes([]); setZoom(null); }
+    catch (error) { toast.error(error instanceof Error ? error.message : "Ação indisponível."); }
   };
-  const selHand = me.hand.find((h) => h.uid === sel);
-  const selAttacker = me.monsters.find((m) => m?.uid === sel);
-  const need = selHand?.card.kind === "monster" ? tributesNeeded(selHand.card.level) : 0;
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    const host = window as typeof window & { __arena?: { state: DuelState; act: (a: Action) => void } };
+    host.__arena = { state: s, act };
+    return () => { delete host.__arena; };
+  }, [s, playable]);
 
-  return (
-    <div className="relative flex min-h-screen flex-col overflow-hidden">
-      <ArenaBackdrop />
-      <CardZoom card={zoom?.card ?? null} owner={zoom?.owner} onClose={() => setZoom(null)} />
-      <div className="flex items-center justify-between gap-2 p-4">
-        <Link to="/jogar" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /> Sair</Link>
-        <p className="font-display text-sm tracking-widest text-gold">SALA {roomId.toUpperCase()} · TURNO {s.turn}</p>
-        <Lp name={opp.name} lp={opp.lp} deck={opp.deck.length} hand={opp.hand.length} enemy />
+  const toggleTribute = (uid: string) => {
+    setTributes((current) => current.includes(uid) ? current.filter((x) => x !== uid) : [...current, uid].slice(0, need));
+    setZoom(null);
+  };
+  const inspect = (card: CardData, enemy = false) => setZoom({ card, owner: enemy ? opponent.name : me.name });
+  const attack = () => { if (selMonster && attackReady) act({ type: "attack", attackerUid: selMonster.uid, ...(target ? { targetUid: target } : {}) }); };
+  const summon = (defense = false) => { if (selHand && canSummon) act({ type: "summon", handUid: selHand.uid, tributes, set: defense }); };
+  const graveCards = grave === "own" ? me.graveyard : opponent.graveyard;
+  const yugi = CHARACTERS.find((c) => c.id === "yugi-muto")?.imageUrl;
+  const kaiba = CHARACTERS.find((c) => c.id === "seto-kaiba")?.imageUrl;
+  const modalActions = zoom?.location === "hand" && playable ? <>
+    {selHand?.card.kind === "monster" ? <>
+      <Button disabled={!canSummon} onClick={() => summon()}><Sparkles />Invocar</Button>
+      {need > 0 && !canSummon && <Button variant="outline" onClick={() => setZoom(null)}><Circle />Selecionar tributos ({tributes.length}/{need})</Button>}
+      <Button variant="outline" disabled={!canSummon} onClick={() => summon(true)}><Shield />Baixar em defesa</Button>
+    </> : <>
+      {selHand?.card.kind === "spell" && <Button disabled={!main} onClick={() => { if (selHand) act({ type: "activateSpell", handUid: selHand.uid }); }}><Zap />Ativar</Button>}
+      <Button variant="outline" disabled={!canSet} onClick={() => { if (selHand) act({ type: "setSpell", handUid: selHand.uid }); }}><Layers />Baixar</Button>
+    </>}
+    <Button variant="ghost" onClick={() => setZoom(null)}><ArrowRight />Voltar ao campo</Button>
+  </> : zoom?.location === "monster" && need > 0 && zoom.uid && playable ? <Button onClick={() => { if (zoom.uid) toggleTribute(zoom.uid); }}><Circle />{tributes.includes(zoom.uid) ? "Remover tributo" : "Oferecer como tributo"}</Button>
+    : zoom?.location === "enemy" && selMonster && playable && s.phase === "battle" ? <Button disabled={!attackReady} onClick={attack}><Swords />Atacar este monstro</Button> : undefined;
+
+  return <div className="duel-screen">
+    <ArenaBackdrop />
+    <header className="arena-topbar">
+      <Button asChild variant="ghost" size="sm"><Link to="/jogar"><ArrowLeft />Sair</Link></Button>
+      <div className="arena-wordmark">DUEL <span>ARENA</span></div>
+      <span className="arena-room-tag"><span className="arena-room-dot" />{vsAI ? "TREINO · IA" : `LOCAL · ${roomId.toUpperCase()}`}</span>
+    </header>
+    <main className="arena-dashboard">
+      <div className="arena-score-row">
+        <ArenaHud player={me} avatar={view === 0 ? yugi : kaiba} active={s.active === view} />
+        <div className="arena-turn-display"><h1>ARENA DE DUELO</h1><strong>TURNO {String(s.turn).padStart(2, "0")}</strong><span>{aiTurn ? "IA JOGANDO…" : PHASE_LABEL[s.phase].toUpperCase()}</span></div>
+        <ArenaHud player={opponent} avatar={view === 0 ? kaiba : yugi} enemy active={s.active === opponentId} />
       </div>
-
-      <div className="perspective-arena flex flex-1 items-center justify-center px-4">
-        <div className="w-full max-w-2xl space-y-3 rounded-2xl border border-primary/40 bg-background/40 p-4 neon-field backdrop-blur-[2px]" style={{ transform: "rotateX(18deg)" }}>
-          <Row zones={opp.spells.map((x) => x && { faceDown: true, card: x.card })} enemy onZoom={(c) => setZoom({ card: c, owner: opp.name })} />
-          <Row enemy zones={opp.monsters.map((m) => m && { faceDown: m.faceDown, card: m.card, def: m.position === "def" })}
-            onPick={(i) => { const t = opp.monsters[i]; if (selAttacker && t) act({ type: "attack", attackerUid: selAttacker.uid, targetUid: t.uid }); }}
-            highlight={!!selAttacker} onZoom={(c) => setZoom({ card: c, owner: opp.name })} />
-          <div className="flex items-center gap-2">
-            <div className="h-px flex-1 bg-energy" />
-            <span className="font-display text-xs text-gold">{PHASE_LABEL[s.phase].toUpperCase()}</span>
-            <div className="h-px flex-1 bg-energy" />
+      <div className="arena-main-grid">
+        <aside className="arena-left-rail">
+          <h2 className="arena-rail-heading"><BookOpen size={14} />REGISTRO DO DUELO</h2>
+          <div className="arena-log" ref={logRef}>{s.log.map((line, i) => <p key={i}><small>{String(i + 1).padStart(2, "0")}</small>{line}</p>)}</div>
+          <div className="arena-selected-detail"><span>CARTA SELECIONADA</span>
+            {selectedCard ? <><h3>{selectedCard.name}</h3><p>{selectedCard.kind === "monster" ? `ATK ${selectedCard.atk ?? "?"} / DEF ${selectedCard.def ?? "?"}` : selectedCard.kind === "spell" ? "Magia" : "Armadilha"}</p>
+              <Button variant="outline" size="sm" className="arena-inspect-button" onClick={() => inspect(selectedCard)}><Eye />Ver carta</Button></> : <p>—</p>}
+            {need > 0 && <p>TRIBUTOS: {tributes.length} / {need}</p>}
           </div>
-          <Row zones={me.monsters.map((m) => m && { faceDown: false, card: m.card, def: m.position === "def", dim: m.faceDown, selected: sel === m.uid || tributes.includes(m.uid) })}
-            onPick={(i) => {
-              const m = me.monsters[i]; if (!m) return;
-              if (need > 0) setTributes((t) => t.includes(m.uid) ? t.filter((x) => x !== m.uid) : [...t, m.uid].slice(0, need));
-              else setSel(sel === m.uid ? null : m.uid);
-            }} onZoom={(c) => setZoom({ card: c, owner: me.name })} />
-          <Row zones={me.spells.map((x) => x && { faceDown: false, card: x.card, dim: true })} onZoom={(c) => setZoom({ card: c, owner: me.name })} />
-        </div>
-      </div>
-
-      <div className="space-y-3 p-4">
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          {s.winner !== null ? (
-            <>
-              <p className="font-display text-xl text-gold">{s.players[s.winner].name} venceu!</p>
-              <Btn onClick={() => setS(newDuel(vsAI))}><RotateCcw className="h-4 w-4" /> Novo duelo</Btn>
-            </>
-          ) : aiTurn ? (
-            <p className="font-display text-sm text-magic animate-pulse">A IA está jogando… ({PHASE_LABEL[s.phase]})</p>
-          ) : s.phase === "draw" ? (
-            <Btn primary onClick={() => act({ type: "draw" })}>Comprar carta ({me.name})</Btn>
-          ) : (
-            <>
-              {selHand?.card.kind === "monster" && (
-                <>
-                  <Btn primary onClick={() => act({ type: "summon", handUid: selHand.uid, tributes })}>Invocar{need ? ` (${tributes.length}/${need} tributos)` : ""}</Btn>
-                  <Btn onClick={() => act({ type: "summon", handUid: selHand.uid, tributes, set: true })}>Baixar em defesa</Btn>
-                </>
-              )}
-              {selHand && selHand.card.kind !== "monster" && (
-                <>
-                  {selHand.card.kind === "spell" && <Btn primary onClick={() => act({ type: "activateSpell", handUid: selHand.uid })}>Ativar</Btn>}
-                  <Btn onClick={() => act({ type: "setSpell", handUid: selHand.uid })}>Baixar</Btn>
-                </>
-              )}
-              {selAttacker && s.phase === "battle" && canAttack(s, selAttacker) && !opp.monsters.some(Boolean) && (
-                <Btn primary onClick={() => act({ type: "attack", attackerUid: selAttacker.uid })}>Ataque direto</Btn>
-              )}
-              {selAttacker && s.phase === "battle" && opp.monsters.some(Boolean) && <span className="text-sm text-primary">Escolha um monstro do oponente como alvo</span>}
-              {selAttacker && (s.phase === "main1" || s.phase === "main2") && <Btn onClick={() => act({ type: "changePosition", uid: selAttacker.uid })}>Mudar posição</Btn>}
-              <Btn onClick={() => act({ type: "nextPhase" })}>{s.phase === "main2" || (s.phase === "main1" && s.turn === 1 && false) ? "Encerrar turno" : "Próxima fase"}</Btn>
-              <Btn onClick={() => act({ type: "surrender" })}><Flag className="h-4 w-4" /> Desistir</Btn>
-            </>
-          )}
-        </div>
-        <div className="flex items-end justify-between gap-4">
-          <Lp name={me.name} lp={me.lp} deck={me.deck.length} hand={me.hand.length} />
-          <div className="flex -space-x-8 overflow-x-auto pb-2">
-            {me.hand.map((h, i) => (
-              <motion.div key={h.uid} className="relative" initial={{ y: 120 }} animate={{ y: sel === h.uid ? -24 : 0 }} transition={{ delay: i * 0.03 }}
-              >
-                <button type="button" onClick={() => { setSel(sel === h.uid ? null : h.uid); setTributes([]); }} aria-label={h.card.name}>
-                  <DuelCard card={h.card} interactive={false} className={`w-20 md:w-28 ${sel === h.uid ? "border-gold glow-gold" : ""}`} />
-                </button>
-                <ZoomBtn onClick={() => setZoom({ card: h.card, owner: me.name })} />
-              </motion.div>
-            ))}
+        </aside>
+        <section className="arena-stage" aria-label="Campo de batalha">
+          <div className="arena-opponent-hand" aria-label={`Mão adversária: ${opponent.hand.length} cartas ocultas`}>
+            {opponent.hand.map((h) => <ArenaCard key={h.uid} card={inspectableCard(h.card, opponentId, view, "hand")} hidden onClick={() => toast("Carta oculta", { description: "A mão adversária permanece oculta." })} />)}
           </div>
-          <div className="hidden max-h-24 w-56 overflow-y-auto text-right text-xs text-muted-foreground md:block">
-            {s.log.slice(-6).reverse().map((l, i) => <p key={i}>{l}</p>)}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-type Zone = { faceDown: boolean; card: import("@/data/catalog").CardData; def?: boolean; dim?: boolean; selected?: boolean } | null;
-
-function Row({ zones, enemy, onPick, highlight, onZoom }: { zones: Zone[]; enemy?: boolean; onPick?: (i: number) => void; highlight?: boolean; onZoom?: (c: CardData) => void }) {
-  return (
-    <div className="grid grid-cols-5 gap-2">
-      {zones.map((z, i) => (
-        <div key={i} className="relative">
-        <button type="button" onClick={() => onPick?.(i)}
-          className={`relative flex w-full aspect-[59/86] items-center justify-center rounded border ${enemy ? "border-destructive/50" : "border-primary/60"} bg-background/40 ${highlight && z ? "ring-2 ring-destructive" : ""} ${z?.selected ? "ring-2 ring-gold" : ""}`}>
-          {z && (z.faceDown ? (
-            <div className={`h-full w-full rounded bg-magic/40 ${z.def ? "rotate-90 scale-75" : ""}`} />
-          ) : (
-            <div className={`${z.def ? "rotate-90 scale-75" : ""} ${z.dim ? "opacity-60" : ""} w-full`}>
-              <DuelCard card={z.card} interactive={false} className="w-full" />
+          <Suspense fallback={<div className="battlefield-scene" />}><Field me={me} opponent={opponent} selected={sel} tributes={tributes} target={target} canDraw={playable && s.phase === "draw"} onDraw={() => act({ type: "draw" })}
+            onOwnCard={(uid, card) => { if (need === 0) { setSel(uid); setTarget(null); } setZoom({ card, owner: me.name, uid, location: "monster" }); }}
+            onOpponentCard={(uid, card) => { if (playable && selMonster && s.phase === "battle") setTarget(uid); if (card) setZoom({ card, owner: opponent.name, uid, location: "enemy" }); else toast("Monstro virado para baixo", { description: "A identidade será revelada durante a batalha." }); }}
+            onInspect={inspect} /></Suspense>
+          <div className="arena-phase-track">{Object.entries(PHASE_LABEL).filter(([key]) => key !== "end").map(([key, label]) => <span key={key} className={key === s.phase ? "current" : ""}>{label}</span>)}</div>
+          <div className="arena-hand-heading"><strong>SUA MÃO · {me.hand.length} CARTAS</strong><span>BARALHO {me.deck.length} · CEMITÉRIO {me.graveyard.length}</span></div>
+          <div className="arena-hand">{me.hand.map((h) => <ArenaCard key={h.uid} card={h.card} selected={sel === h.uid} onClick={() => { setSel(h.uid); setTarget(null); setTributes([]); setZoom({ card: h.card, owner: me.name, uid: h.uid, location: "hand" }); }} />)}</div>
+        </section>
+        <aside className="arena-right-rail">
+          <h2 className="arena-rail-heading"><Swords size={14} />{s.winner !== null ? "DUELO ENCERRADO" : "COMANDOS DO DUELISTA"}</h2>
+          {s.winner !== null ? <div className="arena-actions"><p className="text-center font-bold text-gold">{s.players[s.winner].name} venceu!</p><Button className="arena-action arena-action-main" onClick={() => { setS(newDuel(vsAI)); setSel(null); setZoom(null); setTarget(null); setTributes([]); }}><RotateCcw />Novo duelo</Button></div> : <>
+            <div className="arena-actions">
+              {s.phase === "draw" && <Button className="arena-action arena-action-main" disabled={!playable} onClick={() => act({ type: "draw" })}><Layers />Comprar carta</Button>}
+              <Button className="arena-action arena-action-main" disabled={!playable || s.phase === "draw"} onClick={() => { setS((current) => finishTurn(current)); setSel(null); setTarget(null); setTributes([]); setZoom(null); }}><ArrowRight />Fim de Turno</Button>
+              <Button className="arena-action" disabled={!canSummon} onClick={() => summon()}><Sparkles />Invocação</Button>
+              <Button className="arena-action" disabled={!playable || !main || selHand?.card.kind !== "spell"} onClick={() => { if (selHand) act({ type: "activateSpell", handUid: selHand.uid }); }}><Zap />Ativar</Button>
+              <Button className="arena-action" disabled={!attackReady} onClick={attack}><Swords />{target ? "Atacar alvo" : "Atacar"}</Button>
+              <Button className="arena-action" disabled={!canSet} onClick={() => { if (!selHand) return; if (selHand.card.kind === "monster") summon(true); else act({ type: "setSpell", handUid: selHand.uid }); }}><Shield />Baixar carta</Button>
+              {selMonster && <Button className="arena-action" disabled={!playable || !main || selMonster.summonedTurn === s.turn} onClick={() => act({ type: "changePosition", uid: selMonster.uid })}><RotateCcw />Mudar posição</Button>}
             </div>
-          ))}
-        </button>
-        {z && !(enemy && z.faceDown) && onZoom && <ZoomBtn onClick={() => onZoom(z.card)} />}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function Lp({ name, lp, deck, hand, enemy }: { name: string; lp: number; deck: number; hand: number; enemy?: boolean }) {
-  return (
-    <div className="rounded-lg border border-border bg-card/80 px-4 py-2 backdrop-blur">
-      <p className="font-display text-xs text-muted-foreground">{name} · deck {deck} · mão {hand}</p>
-      <p className={`font-display text-2xl font-black ${enemy ? "text-destructive" : "text-primary"}`}>LP {lp}</p>
-    </div>
-  );
-}
-
-function Btn({ children, onClick, primary }: { children: React.ReactNode; onClick: () => void; primary?: boolean }) {
-  return (
-    <button onClick={onClick} className={`inline-flex items-center gap-1.5 rounded-md px-4 py-2 font-display text-sm font-bold ${primary ? "bg-energy text-primary-foreground glow-primary" : "border border-border bg-card"}`}>
-      {children}
-    </button>
-  );
-}
-
-function ZoomBtn({ onClick }: { onClick: () => void }) {
-  return (
-    <button type="button" aria-label="Ver carta" onClick={(e) => { e.stopPropagation(); onClick(); }}
-      className="absolute right-1 top-1 z-10 rounded-full border border-primary/60 bg-background/80 p-1 text-primary transition hover:scale-110 hover:glow-primary">
-      <ZoomIn className="h-3.5 w-3.5" />
-    </button>
-  );
+            <div className="arena-minor-actions"><Button variant="outline" disabled={!playable || s.phase === "draw"} onClick={() => act({ type: "nextPhase" })}><ChevronRight />Próxima fase</Button><Button variant="ghost" size="icon" aria-label="Desistir do duelo" title="Desistir do duelo" disabled={!playable} onClick={() => { if (window.confirm("Desistir deste duelo?")) act({ type: "surrender" }); }}><Flag /></Button></div>
+          </>}
+          <h2 className="arena-rail-heading"><Layers size={14} />CEMITÉRIO · {graveCards.length}</h2>
+          <div className="arena-graveyard"><div className="arena-graveyard-tabs"><Button size="sm" variant={grave === "own" ? "secondary" : "ghost"} aria-pressed={grave === "own"} onClick={() => setGrave("own")}>Seu ({me.graveyard.length})</Button><Button size="sm" variant={grave === "enemy" ? "secondary" : "ghost"} aria-pressed={grave === "enemy"} onClick={() => setGrave("enemy")}>Oponente ({opponent.graveyard.length})</Button></div>
+            {graveCards.length ? <div className="arena-graveyard-cards">{graveCards.map((card, i) => <ArenaCard key={`${card.id}-${i}`} card={card} onClick={() => inspect(card, grave === "enemy")} />)}</div> : <div className="arena-empty-grave">Nenhuma carta</div>}
+          </div>
+        </aside>
+      </div>
+      <footer className="arena-footer"><span>● {vsAI ? "TREINO CONTRA IA" : "DUELO LOCAL"}</span><span>{aiTurn ? "TURNO DO OPONENTE" : `TURNO DE ${s.players[s.active].name.toUpperCase()}`}</span><span>DUEL ARENA · PROJETO DE FÃS</span></footer>
+    </main>
+    <CardZoom card={zoom?.card ?? null} owner={zoom?.owner} onClose={() => setZoom(null)} actions={modalActions} />
+  </div>;
 }

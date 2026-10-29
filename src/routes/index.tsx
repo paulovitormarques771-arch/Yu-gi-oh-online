@@ -6,6 +6,7 @@ import { DuelCard } from "@/components/arena/DuelCard";
 import { MagicBackdrop } from "@/components/arena/MagicBackdrop";
 import { DuelButton, SiteNav } from "@/components/arena/SiteNav";
 import { HeroBackground } from "@/components/arena/HeroBackground";
+import { ArenaPreview } from "@/components/arena/ArenaPreview";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -64,8 +65,8 @@ function Landing() {
         <div className="mx-auto aspect-video max-w-4xl overflow-hidden rounded-xl border border-border bg-card/60 glow-magic">
           <iframe
             className="h-full w-full"
-            src="https://www.youtube-nocookie.com/embed/5fUa75OWUlY?start=0&end=90&mute=1&rel=0&modestbranding=1"
-            title="Abertura de Yu-Gi-Oh!"
+            src="https://www.youtube-nocookie.com/embed/Akzba3ubOmI?mute=1&rel=0"
+            title="Vídeo de Yu-Gi-Oh! — Duel Arena"
             loading="lazy"
             allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
@@ -102,13 +103,7 @@ function Landing() {
 
       {/* Campo */}
       <Section title="O campo de batalha" kicker="Arena">
-        <div className="perspective-arena mx-auto max-w-4xl">
-          <div className="grid grid-cols-5 gap-3 rounded-2xl border border-primary/40 bg-card/40 p-6 glow-primary" style={{ transform: "rotateX(50deg)" }}>
-            {Array.from({ length: 10 }, (_, i) => (
-              <div key={i} className={`aspect-[59/86] rounded border ${i < 5 ? "border-destructive/50" : "border-primary/60"} bg-background/40`} />
-            ))}
-          </div>
-        </div>
+        <ArenaPreview />
       </Section>
 
       {/* Como jogar */}
