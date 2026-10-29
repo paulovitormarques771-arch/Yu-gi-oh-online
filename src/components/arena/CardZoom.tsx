@@ -1,61 +1,34 @@
-import { AnimatePresence, motion } from "framer-motion";
+import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
-import { useEffect } from "react";
+import { Button } from "@/components/ui/button";
 import { ATTRIBUTE_LABELS, type CardData } from "@/data/catalog";
 
 const KIND_LABEL = { monster: "Monstro", spell: "Magia", trap: "Armadilha" } as const;
 
 /** Full-screen card viewer with large image and legible details. */
-export function CardZoom({ card, owner, onClose }: { card: CardData | null; owner?: string | undefined; onClose: () => void }) {
-  useEffect(() => {
-    if (!card) return;
-    const k = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", k);
-    return () => window.removeEventListener("keydown", k);
-  }, [card, onClose]);
-
-  return (
-    <AnimatePresence>
-      {card && (
-        <motion.div key="zoom" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}
-          role="dialog" aria-modal aria-label={card.name}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-background/85 p-4 backdrop-blur-md">
-          <motion.div initial={{ scale: 0.6, rotateY: -30 }} animate={{ scale: 1, rotateY: 0 }} exit={{ scale: 0.7, opacity: 0 }}
-            transition={{ type: "spring", damping: 18 }} onClick={(e) => e.stopPropagation()}
-            className="relative flex max-h-[92vh] w-full max-w-4xl flex-col gap-6 overflow-y-auto rounded-2xl border border-primary/50 bg-card/95 p-5 glow-primary md:flex-row">
-            <button onClick={onClose} aria-label="Fechar" className="absolute right-3 top-3 rounded-full border border-border bg-background/70 p-2 hover:border-primary">
-              <X className="h-5 w-5" />
-            </button>
-            <div className="mx-auto w-64 shrink-0 md:w-80">
-              {card.imageUrl ? (
-                <img src={card.imageUrl} alt={card.name} className="w-full rounded-lg glow-gold" />
-              ) : (
-                <div className="flex aspect-[59/86] items-center justify-center rounded-lg bg-secondary p-4 text-center font-display">{card.name}</div>
-              )}
+export function CardZoom({ card, owner, onClose, actions }: { card: CardData | null; owner?: string; onClose: () => void; actions?: React.ReactNode }) {
+  return <Dialog.Root open={!!card} onOpenChange={(open) => { if (!open) onClose(); }}>
+    {card && <Dialog.Portal>
+      <Dialog.Overlay className="fixed inset-0 z-50 bg-background/85 backdrop-blur-md" />
+      <Dialog.Content className="card-inspector-content fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2" aria-describedby={undefined}>
+        <Dialog.Close asChild><Button variant="ghost" size="icon" aria-label="Fechar carta" className="absolute right-2 top-2"><X /></Button></Dialog.Close>
+        <div className="card-inspector-layout">
+          {card.imageUrl ? <img src={card.imageUrl} alt={card.name} width={295} height={430} className="card-inspector-image" /> : <div className="flex aspect-[59/86] items-center justify-center bg-secondary p-4 text-center font-display">{card.name}</div>}
+          <div className="min-w-0 space-y-4">
+            {owner && <p className="text-xs font-bold text-arena-cyan">{owner.toUpperCase()}</p>}
+            <Dialog.Title className="card-inspector-name font-display font-bold">{card.name}</Dialog.Title>
+            <div className="flex flex-wrap gap-2 text-sm">
+              <Tag>{KIND_LABEL[card.kind]}</Tag>{card.type && <Tag>{card.type}</Tag>}{card.race && <Tag>{card.race}</Tag>}
+              {card.attribute && <Tag>{ATTRIBUTE_LABELS[card.attribute] ?? card.attribute}</Tag>}{card.level ? <Tag>Nível {card.level}</Tag> : null}
             </div>
-            <div className="flex-1 space-y-4 pr-6">
-              {owner && <p className="font-display text-xs tracking-[0.3em] text-primary">{owner.toUpperCase()}</p>}
-              <h2 className="text-2xl font-black md:text-3xl">{card.name}</h2>
-              <div className="flex flex-wrap gap-2 text-sm">
-                <Tag>{KIND_LABEL[card.kind]}</Tag>
-                {card.type && <Tag>{card.type}</Tag>}
-                {card.race && <Tag>{card.race}</Tag>}
-                {card.attribute && <Tag>{ATTRIBUTE_LABELS[card.attribute] ?? card.attribute}</Tag>}
-                {card.level ? <Tag>Nível {card.level}</Tag> : null}
-              </div>
-              {card.kind === "monster" && (
-                <div className="flex gap-4">
-                  <Stat label="ATK" value={card.atk} />
-                  <Stat label="DEF" value={card.def} />
-                </div>
-              )}
-              <p className="whitespace-pre-line rounded-lg border border-border bg-background/60 p-4 text-base leading-relaxed">{card.desc}</p>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
+            {card.kind === "monster" && <div className="flex gap-4"><Stat label="ATK" value={card.atk} /><Stat label="DEF" value={card.def} /></div>}
+            <p className="card-inspector-detail">{card.desc}</p>
+            {actions && <div className="card-inspector-actions">{actions}</div>}
+          </div>
+        </div>
+      </Dialog.Content>
+    </Dialog.Portal>}
+  </Dialog.Root>;
 }
 
 function Tag({ children }: { children: React.ReactNode }) {

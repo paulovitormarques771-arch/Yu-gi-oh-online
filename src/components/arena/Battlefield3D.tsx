@@ -18,7 +18,15 @@ export type BattlefieldProps = {
 function useArenaColors() {
   return useMemo(() => {
     const css = getComputedStyle(document.documentElement);
-    const color = (name: string) => css.getPropertyValue(name).trim();
+    const canvas = document.createElement("canvas"); canvas.width = 1; canvas.height = 1;
+    const ctx = canvas.getContext("2d");
+    const color = (name: string) => {
+      const token = css.getPropertyValue(name).trim();
+      if (!ctx) return token;
+      ctx.clearRect(0, 0, 1, 1); ctx.fillStyle = token; ctx.fillRect(0, 0, 1, 1);
+      const rgba = ctx.getImageData(0, 0, 1, 1).data;
+      return `rgb(${rgba[0]}, ${rgba[1]}, ${rgba[2]})`;
+    };
     return { cyan: color("--arena-cyan"), green: color("--arena-green"), gold: color("--gold"), surface: color("--arena-surface"), edge: color("--arena-edge"), ink: color("--background"), foreground: color("--foreground"), magic: color("--magic") };
   }, []);
 }
@@ -155,7 +163,7 @@ export function Battlefield3D(p: BattlefieldProps) {
     <Canvas camera={{ fov: 45, near: .1, far: 60 }} dpr={[1, 1.5]} frameloop={reduced ? "demand" : "always"} gl={{ alpha: true, antialias: true }}>
       <Scene {...p} reduced={reduced} onReady={() => setReady(true)} />
     </Canvas>
-    {!ready && <div className="arena-loading"><CardBack /><span>INITIALISATION DU CHAMP</span></div>}
+    {!ready && <div className="arena-loading"><CardBack /><span>PREPARANDO O CAMPO</span></div>}
     <div className="arena-row-label enemy-label">MONSTROS · OPONENTE</div>
     <div className="arena-row-label own-label">MAGIAS & ARMADILHAS</div>
   </div>;
