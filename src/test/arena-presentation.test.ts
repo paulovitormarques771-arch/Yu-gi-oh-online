@@ -15,6 +15,9 @@ describe("card inspection privacy", () => {
 describe("end-turn panel action", () => {
   const card: CardData = { id: 1, name: "Test monster", kind: "monster", level: 4, atk: 1000, def: 1000, desc: "" };
   const setup = () => createDuel(["Você", "IA"], [Array(10).fill(card), Array(10).fill(card)], 42);
+  it("starts both duelists at 8000 LP", () => {
+    expect(setup().players.map((player) => player.lp)).toEqual([8000, 8000]);
+  });
   it("ends the current turn and moves to the opponent's draw phase", () => {
     const next = finishTurn(setup());
     expect(next.active).toBe(1);

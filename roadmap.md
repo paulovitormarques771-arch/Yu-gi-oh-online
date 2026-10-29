@@ -8,7 +8,7 @@
 - [ ] Etapa 7: animações, recursos visuais e acabamento
 
 ## Pedido atual
-- [ ] Refazer a arena com perspectiva 3D, zonas neon, baralhos, cemitério, HUD e ações laterais.
-- [ ] Ampliar cartas ao clicar, preservando as informações ocultas do adversário.
-- [ ] Trocar o vídeo inicial para Akzba3ubOmI e atualizar a prévia do campo.
-- [ ] Conferir o duelo e a apresentação em telas grandes e pequenas.
+- [x] Refazer a arena com perspectiva 3D, zonas neon, baralhos, cemitério, HUD e ações laterais.
+- [x] Ampliar cartas ao clicar, preservando as informações ocultas do adversário.
+- [x] Trocar o vídeo inicial para Akzba3ubOmI e atualizar a prévia do campo.
+- [x] Conferir o duelo e a apresentação em telas grandes e pequenas.
