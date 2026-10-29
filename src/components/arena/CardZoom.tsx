@@ -6,7 +6,7 @@ import { ATTRIBUTE_LABELS, type CardData } from "@/data/catalog";
 const KIND_LABEL = { monster: "Monstro", spell: "Magia", trap: "Armadilha" } as const;
 
 /** Full-screen card viewer with large image and legible details. */
-export function CardZoom({ card, owner, onClose, actions }: { card: CardData | null; owner?: string; onClose: () => void; actions?: React.ReactNode }) {
+export function CardZoom({ card, owner, onClose, actions }: { card: CardData | null; owner?: string | undefined; onClose: () => void; actions?: React.ReactNode }) {
   return <Dialog.Root open={!!card} onOpenChange={(open) => { if (!open) onClose(); }}>
     {card && <Dialog.Portal>
       <Dialog.Overlay className="fixed inset-0 z-50 bg-background/85 backdrop-blur-md" />

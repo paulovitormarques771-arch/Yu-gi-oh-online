@@ -9,7 +9,7 @@ export function CardBack({ className }: { className?: string }) {
 
 export function ArenaCard({ card, hidden, selected, defensive, faceDown, onClick, className, label }: {
   card: CardData | null; hidden?: boolean; selected?: boolean; defensive?: boolean; faceDown?: boolean;
-  onClick?: () => void; className?: string; label?: string;
+  onClick?: (() => void) | undefined; className?: string; label?: string;
 }) {
   return (
     <Button variant="ghost" type="button" onClick={onClick} aria-label={label ?? (hidden ? "Carta oculta do adversário" : card?.name ?? "Zona vazia")}

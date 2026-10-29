@@ -19,7 +19,7 @@ function useArenaColors() {
   return useMemo(() => {
     const css = getComputedStyle(document.documentElement);
     const canvas = document.createElement("canvas"); canvas.width = 1; canvas.height = 1;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
     const color = (name: string) => {
       const token = css.getPropertyValue(name).trim();
       if (!ctx) return token;
@@ -35,7 +35,7 @@ function CameraRig() {
   const { camera, size } = useThree();
   useEffect(() => {
     const aspect = size.width / size.height;
-    const distance = aspect < 1.05 ? 1.28 : 1;
+    const distance = aspect < 1.05 ? 1.17 : .78;
     camera.position.set(0, 10.7 * distance, 8.9 * distance);
     camera.lookAt(0, 0, 0.1);
     camera.updateProjectionMatrix();
@@ -44,12 +44,10 @@ function CameraRig() {
 }
 
 function Frame({ x, z, color }: { x: number; z: number; color: string }) {
+  const corners = useMemo(() => new Float32Array([-.51, .01, -.69, .51, .01, -.69, .51, .01, .69, -.51, .01, .69]), []);
   return <group position={[x, 0.025, z]}>
     <mesh rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[1.02, 1.38]} /><meshBasicMaterial color={color} transparent opacity={0.045} /></mesh>
-    {[-1, 1].map((n) => <group key={n}>
-      <mesh position={[n * .51, .01, 0]}><boxGeometry args={[.022, .016, 1.4]} /><meshBasicMaterial color={color} toneMapped={false} /></mesh>
-      <mesh position={[0, .01, n * .69]}><boxGeometry args={[1.04, .016, .022]} /><meshBasicMaterial color={color} toneMapped={false} /></mesh>
-    </group>)}
+    <lineLoop><bufferGeometry><bufferAttribute attach="attributes-position" args={[corners, 3]} /></bufferGeometry><lineBasicMaterial color={color} toneMapped={false} /></lineLoop>
   </group>;
 }
 
@@ -68,9 +66,11 @@ function Energy({ reduced, onReady }: { reduced: boolean; onReady: () => void })
     if (reduced) return;
     const dt = Math.min(delta, .05);
     if (ref.current) {
-      const values = ref.current.geometry.attributes.position;
-      for (let i = 0; i < values.count; i++) values.setY(i, values.getY(i) > 2.5 ? .1 : values.getY(i) + dt * .18);
-      values.needsUpdate = true;
+      const values = ref.current.geometry.attributes["position"];
+      if (values) {
+        for (let i = 0; i < values.count; i++) values.setY(i, values.getY(i) > 2.5 ? .1 : values.getY(i) + dt * .18);
+        values.needsUpdate = true;
+      }
     }
     if (pulse.current) pulse.current.opacity = .55 + Math.sin(performance.now() * .0014) * .2;
   });
@@ -80,7 +80,7 @@ function Energy({ reduced, onReady }: { reduced: boolean; onReady: () => void })
   </>;
 }
 
-function DeckStack({ x, z, count, enemy, onDraw, canDraw }: { x: number; z: number; count: number; enemy?: boolean; onDraw?: () => void; canDraw?: boolean }) {
+function DeckStack({ x, z, count, enemy, onDraw, canDraw }: { x: number; z: number; count: number; enemy?: boolean; onDraw?: (() => void) | undefined; canDraw?: boolean | undefined }) {
   const c = useArenaColors();
   return <group position={[x, 0, z]}>
     <mesh position={[0, .10, 0]}><boxGeometry args={[.91, .20, 1.28]} /><meshStandardMaterial color={c.edge} metalness={.6} roughness={.5} /></mesh>
@@ -160,7 +160,7 @@ export function Battlefield3D(p: BattlefieldProps) {
     return () => media.removeEventListener("change", update);
   }, []);
   return <div className={cn("battlefield-scene", p.preview && "battlefield-preview")} data-scene-ready={ready ? "1" : undefined}>
-    <Canvas camera={{ fov: 45, near: .1, far: 60 }} dpr={[1, 1.5]} frameloop={reduced ? "demand" : "always"} gl={{ alpha: true, antialias: true }}>
+    <Canvas camera={{ fov: 40, near: .1, far: 60 }} dpr={[1, 1.5]} frameloop={reduced ? "demand" : "always"} gl={{ alpha: true, antialias: true }}>
       <Scene {...p} reduced={reduced} onReady={() => setReady(true)} />
     </Canvas>
     {!ready && <div className="arena-loading"><CardBack /><span>PREPARANDO O CAMPO</span></div>}

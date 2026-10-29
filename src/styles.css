@@ -326,11 +326,11 @@
   .arena-lp > span:first-child { font-size: 9px; }
   .arena-active-light { display: none; }
   .arena-turn-display h1 { font-size: 8px; }
-  .arena-turn-display strong { font-size: 20px; }
+  .arena-turn-display strong { font-size: 14px; }
   .arena-turn-display span { font-size: 8px; }
   .arena-main-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
   .arena-stage, .arena-right-rail { width: 100%; }
-  .battlefield-scene { height: 420px; }
+  .battlefield-scene { height: 315px; }
   .arena-opponent-hand { height: 32px; }
   .arena-opponent-hand .arena-card { width: 23px; height: 32px; }
   .arena-hand { min-height: 132px; gap: 7px; justify-content: safe center; }
