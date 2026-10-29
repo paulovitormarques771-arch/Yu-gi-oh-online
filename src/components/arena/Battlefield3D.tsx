@@ -1,7 +1,7 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Environment, Html, Lightformer } from "@react-three/drei";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { CanvasTexture, SRGBColorSpace, type Points, type MeshBasicMaterial } from "three";
+import { Environment, Lightformer } from "@react-three/drei";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { CanvasTexture, SRGBColorSpace, type Points, type MeshBasicMaterial, type Group, type Matrix4 } from "three";
 import { ArenaCard, CardBack } from "@/components/arena/ArenaCard";
 import type { CardData } from "@/data/catalog";
 import type { PlayerState } from "@/lib/duel-engine";
@@ -35,7 +35,7 @@ function CameraRig() {
   const { camera, size } = useThree();
   useEffect(() => {
     const aspect = size.width / size.height;
-    const distance = aspect < 1.05 ? 1.17 : .78;
+    const distance = aspect < 1.05 ? 1.34 : .78;
     camera.position.set(0, 10.7 * distance, 8.9 * distance);
     camera.lookAt(0, 0, 0.1);
     camera.updateProjectionMatrix();
@@ -80,19 +80,69 @@ function Energy({ reduced, onReady }: { reduced: boolean; onReady: () => void })
   </>;
 }
 
-function DeckStack({ x, z, count, enemy, onDraw, canDraw }: { x: number; z: number; count: number; enemy?: boolean; onDraw?: (() => void) | undefined; canDraw?: boolean | undefined }) {
+function DeckStack({ x, z }: { x: number; z: number }) {
   const c = useArenaColors();
   return <group position={[x, 0, z]}>
     <mesh position={[0, .10, 0]}><boxGeometry args={[.91, .20, 1.28]} /><meshStandardMaterial color={c.edge} metalness={.6} roughness={.5} /></mesh>
     {[.055, .095, .135, .175].map((y) => <mesh key={y} position={[0, y, 0]}><boxGeometry args={[.92, .007, 1.29]} /><meshBasicMaterial color={c.gold} transparent opacity={.6} /></mesh>)}
-    <Html transform position={[0, .213, 0]} rotation={[-Math.PI / 2, 0, 0]} distanceFactor={4} zIndexRange={[12, 0]}>
-      <ArenaCard hidden card={null} label={`${enemy ? "Baralho adversário" : "Seu baralho"}: ${count} cartas`} onClick={canDraw ? onDraw : undefined} className="arena-deck-top" />
-    </Html>
-    <Html center position={[0, .08, enemy ? -.95 : .95]} zIndexRange={[12, 0]}><span className="arena-deck-count">BARALHO <b>{count}</b></span></Html>
   </group>;
 }
 
-function Scene({ onReady, reduced, ...p }: BattlefieldProps & { onReady: () => void; reduced: boolean }) {
+type Panel = { id: string; x: number; y: number; z: number; content: React.ReactNode };
+type PanelRefs = RefObject<Map<string, HTMLDivElement>>;
+
+function panels(p: BattlefieldProps): Panel[] {
+  const result: Panel[] = [];
+  const rows = [
+    { zones: p.opponent.spells, z: -2.5, enemy: true, spell: true },
+    { zones: p.opponent.monsters, z: -1.02, enemy: true, spell: false },
+    { zones: p.me.monsters, z: 1.02, enemy: false, spell: false },
+    { zones: p.me.spells, z: 2.5, enemy: false, spell: true },
+  ];
+  rows.forEach((row, ri) => row.zones.forEach((zone, i) => {
+    if (!zone) return;
+    const hidden = row.enemy && zone.faceDown;
+    const shown = hidden ? null : zone.card;
+    const selected = p.selected === zone.uid || p.tributes?.includes(zone.uid) || p.target === zone.uid;
+    result.push({ id: `zone-${ri}-${i}`, x: (i - 2) * 1.17, y: .06, z: row.z,
+      content: <ArenaCard card={shown} hidden={hidden} defensive={"position" in zone && zone.position === "def"} faceDown={!row.enemy && zone.faceDown} selected={selected}
+        onClick={() => row.enemy ? (row.spell ? shown && p.onInspect?.(shown, true) : p.onOpponentCard?.(zone.uid, shown)) : row.spell ? p.onInspect?.(zone.card, false) : p.onOwnCard?.(zone.uid, zone.card)} /> });
+  }));
+  [{x: -3.7, z: -2.5, player: p.opponent, enemy: true}, {x: 3.7, z: 2.5, player: p.me, enemy: false}].forEach((deck) => {
+    result.push({ id: `deck-${deck.enemy}`, x: deck.x, y: .213, z: deck.z, content: <div>
+      <ArenaCard hidden card={null} label={`${deck.enemy ? "Baralho adversário" : "Seu baralho"}: ${deck.player.deck.length} cartas`} onClick={!deck.enemy && p.canDraw ? p.onDraw : undefined} className="arena-deck-top" />
+      <span className="arena-deck-count">BARALHO <b>{deck.player.deck.length}</b></span>
+    </div> });
+  });
+  [{x: 3.7, z: -1.8, cards: p.opponent.graveyard, enemy: true}, {x: -3.7, z: 1.8, cards: p.me.graveyard, enemy: false}].forEach((g) => {
+    const last = g.cards[g.cards.length - 1];
+    result.push({ id: `grave-${g.enemy}`, x: g.x, y: .05, z: g.z,
+      content: last ? <ArenaCard card={last} onClick={() => p.onInspect?.(last, g.enemy)} /> : <div className="arena-grave-mark"><span>◇</span><small>CEMITÉRIO</small></div> });
+  });
+  return result;
+}
+
+/** DOM controls stay in the main React root; only projection matrices are updated per frame. */
+function ProjectPanel({ panel, refs }: { panel: Panel; refs: PanelRefs }) {
+  const group = useRef<Group>(null);
+  const cameraMultipliers = [1,-1,1,1,1,-1,1,1,1,-1,1,1,1,-1,1,1];
+  const objectMultipliers = [.01,.01,.01,1,-.01,-.01,-.01,-1,.01,.01,.01,1,1,1,1,1];
+  const matrixCSS = (matrix: Matrix4, multipliers: number[]) => `matrix3d(${matrix.elements.map((n, i) => n * (multipliers[i] ?? 1)).join(",")})`;
+  useFrame(({camera, size}) => {
+    const outer = refs.current.get(panel.id);
+    const cameraEl = outer?.firstElementChild;
+    const objectEl = cameraEl?.firstElementChild;
+    if (!outer || !(cameraEl instanceof HTMLElement) || !(objectEl instanceof HTMLElement) || !group.current) return;
+    camera.updateMatrixWorld(); group.current.updateWorldMatrix(true, false);
+    const fov = (camera.projectionMatrix.elements[5] ?? 1) * size.height / 2;
+    outer.style.width = `${size.width}px`; outer.style.height = `${size.height}px`; outer.style.perspective = `${fov}px`;
+    cameraEl.style.transform = `translateZ(${fov}px)${matrixCSS(camera.matrixWorldInverse,cameraMultipliers)}translate(${size.width/2}px,${size.height/2}px)`;
+    objectEl.style.transform = `translate(-50%,-50%)${matrixCSS(group.current.matrixWorld,objectMultipliers)}`;
+  });
+  return <group ref={group} position={[panel.x,panel.y,panel.z]} rotation={[-Math.PI/2,0,0]} />;
+}
+
+function Scene({ onReady, reduced, panelList, panelRefs, ...p }: BattlefieldProps & { onReady: () => void; reduced: boolean; panelList: Panel[]; panelRefs: PanelRefs }) {
   const colors = useArenaColors();
   const surface = useMemo(() => {
     const canvas = document.createElement("canvas"); canvas.width = 256; canvas.height = 256;
@@ -125,28 +175,13 @@ function Scene({ onReady, reduced, ...p }: BattlefieldProps & { onReady: () => v
     <mesh position={[0, .02, 0]}><boxGeometry args={[8.55, .025, .024]} /><meshBasicMaterial color={colors.gold} toneMapped={false} /></mesh>
     {rows.map((row, ri) => row.zones.map((zone, i) => {
       const x = (i - 2) * 1.17;
-      const hidden = !!zone && row.enemy && zone.faceDown;
-      const shown = zone && !hidden ? zone.card : null;
-      const defensive = !!zone && "position" in zone && zone.position === "def";
-      const selected = !!zone && (p.selected === zone.uid || p.tributes?.includes(zone.uid));
-      return <group key={`${ri}-${i}`}>
-        <Frame x={x} z={row.z} color={row.spell ? colors.green : colors.cyan} />
-        {zone && <Html transform position={[x, .06, row.z]} rotation={[-Math.PI / 2, 0, 0]} distanceFactor={4} zIndexRange={[15, 0]}>
-          <ArenaCard card={shown} hidden={hidden} defensive={defensive} faceDown={!row.enemy && zone.faceDown} selected={selected || p.target === zone.uid}
-            onClick={() => row.enemy ? (row.spell ? shown && p.onInspect?.(shown, true) : p.onOpponentCard?.(zone.uid, shown)) : row.spell ? p.onInspect?.(zone.card, false) : p.onOwnCard?.(zone.uid, zone.card)} />
-        </Html>}
-      </group>;
+      return <Frame key={`${ri}-${i}`} x={x} z={row.z} color={row.spell ? colors.green : colors.cyan} />;
     }))}
-    <DeckStack x={-3.7} z={-2.5} count={p.opponent.deck.length} enemy />
-    <DeckStack x={3.7} z={2.5} count={p.me.deck.length} onDraw={p.onDraw} canDraw={p.canDraw} />
-    {[{ x: 3.7, z: -1.8, cards: p.opponent.graveyard, enemy: true }, { x: -3.7, z: 1.8, cards: p.me.graveyard, enemy: false }].map((g) => {
-      const last = g.cards[g.cards.length - 1];
-      return <group key={g.x}><Frame x={g.x} z={g.z} color={colors.magic} />
-        <Html transform position={[g.x, .05, g.z]} rotation={[-Math.PI / 2, 0, 0]} distanceFactor={4} zIndexRange={[12, 0]}>
-          {last ? <ArenaCard card={last} onClick={() => p.onInspect?.(last, g.enemy)} /> : <div className="arena-grave-mark"><span>◇</span><small>CEMITÉRIO</small></div>}
-        </Html>
-      </group>;
-    })}
+    <DeckStack x={-3.7} z={-2.5} />
+    <DeckStack x={3.7} z={2.5} />
+    <Frame x={3.7} z={-1.8} color={colors.magic} />
+    <Frame x={-3.7} z={1.8} color={colors.magic} />
+    {panelList.map((panel) => <ProjectPanel key={panel.id} panel={panel} refs={panelRefs} />)}
     <Energy reduced={reduced} onReady={onReady} />
   </>;
 }
@@ -154,6 +189,8 @@ function Scene({ onReady, reduced, ...p }: BattlefieldProps & { onReady: () => v
 export function Battlefield3D(p: BattlefieldProps) {
   const [ready, setReady] = useState(false);
   const [reduced, setReduced] = useState(false);
+  const panelRefs = useRef(new Map<string, HTMLDivElement>());
+  const panelList = panels(p);
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
     const update = () => setReduced(media.matches); update(); media.addEventListener("change", update);
@@ -161,8 +198,11 @@ export function Battlefield3D(p: BattlefieldProps) {
   }, []);
   return <div className={cn("battlefield-scene", p.preview && "battlefield-preview")} data-scene-ready={ready ? "1" : undefined}>
     <Canvas camera={{ fov: 40, near: .1, far: 60 }} dpr={[1, 1.5]} frameloop={reduced ? "demand" : "always"} gl={{ alpha: true, antialias: true }}>
-      <Scene {...p} reduced={reduced} onReady={() => setReady(true)} />
+      <Scene {...p} reduced={reduced} panelList={panelList} panelRefs={panelRefs} onReady={() => setReady(true)} />
     </Canvas>
+    {panelList.map((panel) => <div className="arena-projected-panel" key={panel.id} ref={(element) => { if (element) panelRefs.current.set(panel.id, element); else panelRefs.current.delete(panel.id); }}>
+      <div className="arena-projected-camera"><div className="arena-projected-object">{panel.content}</div></div>
+    </div>)}
     {!ready && <div className="arena-loading"><CardBack /><span>PREPARANDO O CAMPO</span></div>}
     <div className="arena-row-label enemy-label">MONSTROS · OPONENTE</div>
     <div className="arena-row-label own-label">MAGIAS & ARMADILHAS</div>
