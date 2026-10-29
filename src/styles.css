@@ -239,9 +239,9 @@
 .arena-stage { position: relative; min-width: 0; }
 .battlefield-scene { position: relative; width: 100%; height: clamp(450px, 42vw, 640px); }
 .battlefield-scene canvas { touch-action: pan-y; }
-.arena-projected-panel { position: absolute; top: 0; left: 0; overflow: hidden; pointer-events: none; z-index: 10; }
-.arena-projected-camera { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform-style: preserve-3d; pointer-events: none; }
-.arena-projected-object { position: absolute; pointer-events: auto; }
+.arena-projected-panel { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 10; }
+.arena-projected-camera { position: absolute; inset: 0; pointer-events: none; }
+.arena-projected-object { position: absolute; top: 0; left: 0; transform-origin: 0 0; pointer-events: auto; }
 .arena-row-label { position: absolute; left: 0; width: 100%; text-align: center; pointer-events: none; font-size: 9px; color: var(--arena-cyan); font-weight: 600; }
 .enemy-label { top: 8%; }
 .own-label { bottom: 4%; color: var(--arena-green); }

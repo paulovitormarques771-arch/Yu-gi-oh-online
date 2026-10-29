@@ -1,7 +1,7 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer } from "@react-three/drei";
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { CanvasTexture, SRGBColorSpace, type Points, type MeshBasicMaterial, type Group, type Matrix4 } from "three";
+import { CanvasTexture, SRGBColorSpace, Vector3, type Points, type MeshBasicMaterial, type Group } from "three";
 import { ArenaCard, CardBack } from "@/components/arena/ArenaCard";
 import type { CardData } from "@/data/catalog";
 import type { PlayerState } from "@/lib/duel-engine";
@@ -35,7 +35,7 @@ function CameraRig() {
   const { camera, size } = useThree();
   useEffect(() => {
     const aspect = size.width / size.height;
-    const distance = aspect < 1.35 ? 1 : .78;
+    const distance = Math.max(.84, 1.27 / aspect);
     camera.position.set(0, 10.7 * distance, 8.9 * distance);
     camera.lookAt(0, 0, 0.1);
     camera.updateProjectionMatrix();
@@ -125,19 +125,29 @@ function panels(p: BattlefieldProps): Panel[] {
 /** DOM controls stay in the main React root; only projection matrices are updated per frame. */
 function ProjectPanel({ panel, refs }: { panel: Panel; refs: PanelRefs }) {
   const group = useRef<Group>(null);
-  const cameraMultipliers = [1,-1,1,1,1,-1,1,1,1,-1,1,1,1,-1,1,1];
-  const objectMultipliers = [.01,.01,.01,1,-.01,-.01,-.01,-1,.01,.01,.01,1,1,1,1,1];
-  const matrixCSS = (matrix: Matrix4, multipliers: number[]) => `matrix3d(${matrix.elements.map((n, i) => n * (multipliers[i] ?? 1)).join(",")})`;
+  const corners = useMemo(() => [new Vector3(), new Vector3(), new Vector3(), new Vector3()], []);
   useFrame(({camera, size}) => {
     const outer = refs.current.get(panel.id);
     const cameraEl = outer?.firstElementChild;
     const objectEl = cameraEl?.firstElementChild;
     if (!outer || !(cameraEl instanceof HTMLElement) || !(objectEl instanceof HTMLElement) || !group.current) return;
     camera.updateMatrixWorld(); group.current.updateWorldMatrix(true, false);
-    const fov = (camera.projectionMatrix.elements[5] ?? 1) * size.height / 2;
-    outer.style.width = `${size.width}px`; outer.style.height = `${size.height}px`; outer.style.perspective = `${fov}px`;
-    cameraEl.style.transform = `translateZ(${fov}px)${matrixCSS(camera.matrixWorldInverse,cameraMultipliers)}translate(${size.width/2}px,${size.height/2}px)`;
-    objectEl.style.transform = `translate(-50%,-50%)${matrixCSS(group.current.matrixWorld,objectMultipliers)}`;
+    const width = objectEl.offsetWidth, height = objectEl.offsetHeight;
+    if (!width || !height) return;
+    corners.forEach((v,i) => {
+      v.set((i === 0 || i === 3 ? -.5 : .5) * width * .01, (i < 2 ? .5 : -.5) * height * .01, 0);
+      group.current?.localToWorld(v); v.project(camera);
+      v.set((v.x + 1) * size.width / 2, (1 - v.y) * size.height / 2, 0);
+    });
+    const [a,b,c,d] = corners;
+    if (!a || !b || !c || !d) return;
+    const dx1=b.x-c.x, dx2=d.x-c.x, dx3=a.x-b.x+c.x-d.x;
+    const dy1=b.y-c.y, dy2=d.y-c.y, dy3=a.y-b.y+c.y-d.y;
+    const denominator=dx1*dy2-dx2*dy1;
+    if (Math.abs(denominator) < .00001) return;
+    const g=(dx3*dy2-dx2*dy3)/denominator, h=(dx1*dy3-dx3*dy1)/denominator;
+    const matrix=[(b.x-a.x+g*b.x)/width,(b.y-a.y+g*b.y)/width,0,g/width,(d.x-a.x+h*d.x)/height,(d.y-a.y+h*d.y)/height,0,h/height,0,0,1,0,a.x,a.y,0,1];
+    objectEl.style.transform = `matrix3d(${matrix.join(",")})`;
   });
   return <group ref={group} position={[panel.x,panel.y,panel.z]} rotation={[-Math.PI/2,0,0]} />;
 }
