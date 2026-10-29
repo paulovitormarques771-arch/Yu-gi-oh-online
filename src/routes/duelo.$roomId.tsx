@@ -79,7 +79,7 @@ function Arena() {
 
   const act = (action: Action) => {
     if (!playable) return;
-    try { setS((current) => applyAction(current, action)); setSel(null); setTarget(null); setTributes([]); setZoom(null); }
+    try { const next = applyAction(s, action); setS(next); setSel(null); setTarget(null); setTributes([]); setZoom(null); }
     catch (error) { toast.error(error instanceof Error ? error.message : "Ação indisponível."); }
   };
   useEffect(() => {
@@ -141,7 +141,7 @@ function Arena() {
           </div>
           <Suspense fallback={<div className="battlefield-scene" />}><Field me={me} opponent={opponent} selected={sel} tributes={tributes} target={target} canDraw={playable && s.phase === "draw"} onDraw={() => act({ type: "draw" })}
             onOwnCard={(uid, card) => { if (need === 0) { setSel(uid); setTarget(null); } setZoom({ card, owner: me.name, uid, location: "monster" }); }}
-            onOpponentCard={(uid, card) => { if (selMonster) setTarget(uid); if (card) setZoom({ card, owner: opponent.name, uid, location: "enemy" }); else toast("Monstro virado para baixo", { description: "A identidade será revelada durante a batalha." }); }}
+            onOpponentCard={(uid, card) => { if (playable && selMonster && s.phase === "battle") setTarget(uid); if (card) setZoom({ card, owner: opponent.name, uid, location: "enemy" }); else toast("Monstro virado para baixo", { description: "A identidade será revelada durante a batalha." }); }}
             onInspect={inspect} /></Suspense>
           <div className="arena-phase-track">{Object.entries(PHASE_LABEL).filter(([key]) => key !== "end").map(([key, label]) => <span key={key} className={key === s.phase ? "current" : ""}>{label}</span>)}</div>
           <div className="arena-hand-heading"><strong>SUA MÃO · {me.hand.length} CARTAS</strong><span>BARALHO {me.deck.length} · CEMITÉRIO {me.graveyard.length}</span></div>
