@@ -11,6 +11,10 @@ import { CHARACTERS, type CardData } from "@/data/catalog";
 import { ALL_CARDS } from "@/data/cards";
 import { aiNextAction } from "@/lib/duel-ai";
 import { finishTurn, inspectableCard } from "@/lib/arena-presentation";
+import { supabase } from "@/integrations/supabase/client";
+import { OnlineRoom } from "@/components/arena/OnlineRoom";
+import { isRoomCode } from "@/lib/online-room";
+import type { Json } from "@/integrations/supabase/types";
 import { applyAction, canAttack, createDuel, quickDeck, tributesNeeded, type Action, type DuelState, type PlayerId } from "@/lib/duel-engine";
 
 export const Route = createFileRoute("/duelo/$roomId")({
@@ -30,34 +34,55 @@ export const Route = createFileRoute("/duelo/$roomId")({
 const Field = lazy(() => import("@/components/arena/Battlefield3D").then((m) => ({ default: m.Battlefield3D })));
 const PHASE_LABEL = { draw: "Compra", main1: "Principal 1", battle: "Batalha", main2: "Principal 2", end: "Final" } as const;
 
-function newDuel(vsAI = false) {
+export function newDuel(vsAI = false, names?: [string, string]) {
   const seed = Date.now() % 100000;
-  return createDuel(vsAI ? ["Você", "IA Duelista"] : ["Jogador 1", "Jogador 2"], [quickDeck(ALL_CARDS, seed), quickDeck(ALL_CARDS, seed + 99)], seed);
+  return createDuel(names ?? (vsAI ? ["Você", "IA Duelista"] : ["Jogador 1", "Jogador 2"]), [quickDeck(ALL_CARDS, seed), quickDeck(ALL_CARDS, seed + 99)], seed);
 }
 
 function Duelo() {
   const [ready, setReady] = useState(false);
   useEffect(() => setReady(true), []);
   if (!ready) return <div className="duel-screen"><ArenaBackdrop /></div>;
+  return <ArenaEntry />;
+}
+
+function ArenaEntry() {
+  const { roomId } = Route.useParams();
+  if (isRoomCode(roomId)) return <OnlineRoom roomId={roomId} render={(online) => <Arena online={online} />} />;
   return <Arena />;
 }
 
-function Arena() {
+export interface OnlineSeat { roomId: string; seat: PlayerId; initial: DuelState; names: [string, string] }
+
+function Arena({ online }: { online?: OnlineSeat }) {
   const { roomId } = Route.useParams();
   const vsAI = roomId === "treino";
-  const [s, setS] = useState<DuelState>(() => newDuel(vsAI));
+  const [s, setS] = useState<DuelState>(() => online?.initial ?? newDuel(vsAI));
+  const commit = (next: DuelState) => {
+    setS(next);
+    if (online) void supabase.from("duel_rooms").update({ state: next as unknown as Json, status: next.winner !== null ? "finished" : "playing" }).eq("id", online.roomId).then(({ error }) => { if (error) toast.error("Falha ao sincronizar a jogada."); });
+  };
+  useEffect(() => {
+    if (!online) return;
+    const channel = supabase.channel(`room-${online.roomId}-${Math.random().toString(36).slice(2)}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "duel_rooms", filter: `id=eq.${online.roomId}` }, (payload) => {
+        const next = (payload.new as { state: DuelState | null }).state;
+        if (next) setS(next);
+      }).subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [online?.roomId]);
   const [sel, setSel] = useState<string | null>(null);
   const [target, setTarget] = useState<string | null>(null);
   const [zoom, setZoom] = useState<{ card: CardData; owner: string; uid?: string; location?: "hand" | "monster" | "enemy" } | null>(null);
   const [tributes, setTributes] = useState<string[]>([]);
   const [grave, setGrave] = useState<"own" | "enemy">("own");
   const logRef = useRef<HTMLDivElement>(null);
-  const view: PlayerId = vsAI ? 0 : s.active;
+  const view: PlayerId = online ? online.seat : vsAI ? 0 : s.active;
   const opponentId: PlayerId = view === 0 ? 1 : 0;
   const me = s.players[view];
   const opponent = s.players[opponentId];
   const aiTurn = vsAI && s.active === 1 && s.winner === null;
-  const playable = !aiTurn && s.winner === null;
+  const playable = !aiTurn && s.winner === null && (!online || s.active === online.seat);
   const main = s.phase === "main1" || s.phase === "main2";
   const selHand = me.hand.find((h) => h.uid === sel);
   const selMonster = me.monsters.find((m) => m?.uid === sel);
@@ -79,7 +104,7 @@ function Arena() {
 
   const act = (action: Action) => {
     if (!playable) return;
-    try { const next = applyAction(s, action); setS(next); setSel(null); setTarget(null); setTributes([]); setZoom(null); }
+    try { const next = applyAction(s, action); commit(next); setSel(null); setTarget(null); setTributes([]); setZoom(null); }
     catch (error) { toast.error(error instanceof Error ? error.message : "Ação indisponível."); }
   };
   useEffect(() => {
@@ -117,12 +142,12 @@ function Arena() {
     <header className="arena-topbar">
       <Button asChild variant="ghost" size="sm"><Link to="/jogar"><ArrowLeft />Sair</Link></Button>
       <div className="arena-wordmark">DUEL <span>ARENA</span></div>
-      <span className="arena-room-tag"><span className="arena-room-dot" />{vsAI ? "TREINO · IA" : `LOCAL · ${roomId.toUpperCase()}`}</span>
+      <span className="arena-room-tag"><span className="arena-room-dot" />{vsAI ? "TREINO · IA" : `${online ? "ONLINE" : "LOCAL"} · ${roomId.toUpperCase()}`}</span>
     </header>
     <main className="arena-dashboard">
       <div className="arena-score-row">
         <ArenaHud player={me} avatar={view === 0 ? yugi : kaiba} active={s.active === view} />
-        <div className="arena-turn-display"><h1>ARENA DE DUELO</h1><strong>TURNO {String(s.turn).padStart(2, "0")}</strong><span>{aiTurn ? "IA JOGANDO…" : PHASE_LABEL[s.phase].toUpperCase()}</span></div>
+        <div className="arena-turn-display"><h1>ARENA DE DUELO</h1><strong>TURNO {String(s.turn).padStart(2, "0")}</strong><span>{aiTurn ? "IA JOGANDO…" : online && s.active !== online.seat ? "VEZ DO OPONENTE" : PHASE_LABEL[s.phase].toUpperCase()}</span></div>
         <ArenaHud player={opponent} avatar={view === 0 ? kaiba : yugi} enemy active={s.active === opponentId} />
       </div>
       <div className="arena-main-grid">
@@ -149,10 +174,10 @@ function Arena() {
         </section>
         <aside className="arena-right-rail">
           <h2 className="arena-rail-heading"><Swords size={14} />{s.winner !== null ? "DUELO ENCERRADO" : "COMANDOS DO DUELISTA"}</h2>
-          {s.winner !== null ? <div className="arena-actions"><p className="text-center font-bold text-gold">{s.players[s.winner].name} venceu!</p><Button className="arena-action arena-action-main" onClick={() => { setS(newDuel(vsAI)); setSel(null); setZoom(null); setTarget(null); setTributes([]); }}><RotateCcw />Novo duelo</Button></div> : <>
+          {s.winner !== null ? <div className="arena-actions"><p className="text-center font-bold text-gold">{s.players[s.winner].name} venceu!</p><Button className="arena-action arena-action-main" onClick={() => { commit(newDuel(vsAI, online?.names)); setSel(null); setZoom(null); setTarget(null); setTributes([]); }}><RotateCcw />Novo duelo</Button></div> : <>
             <div className="arena-actions">
               {s.phase === "draw" && <Button className="arena-action arena-action-main" disabled={!playable} onClick={() => act({ type: "draw" })}><Layers />Comprar carta</Button>}
-              <Button className="arena-action arena-action-main" disabled={!playable || s.phase === "draw"} onClick={() => { setS((current) => finishTurn(current)); setSel(null); setTarget(null); setTributes([]); setZoom(null); }}><ArrowRight />Fim de Turno</Button>
+              <Button className="arena-action arena-action-main" disabled={!playable || s.phase === "draw"} onClick={() => { commit(finishTurn(s)); setSel(null); setTarget(null); setTributes([]); setZoom(null); }}><ArrowRight />Fim de Turno</Button>
               <Button className="arena-action" disabled={!canSummon} onClick={() => summon()}><Sparkles />Invocação</Button>
               <Button className="arena-action" disabled={!playable || !main || selHand?.card.kind !== "spell"} onClick={() => { if (selHand) act({ type: "activateSpell", handUid: selHand.uid }); }}><Zap />Ativar</Button>
               <Button className="arena-action" disabled={!attackReady} onClick={attack}><Swords />{target ? "Atacar alvo" : "Atacar"}</Button>
@@ -167,7 +192,7 @@ function Arena() {
           </div>
         </aside>
       </div>
-      <footer className="arena-footer"><span>● {vsAI ? "TREINO CONTRA IA" : "DUELO LOCAL"}</span><span>{aiTurn ? "TURNO DO OPONENTE" : `TURNO DE ${s.players[s.active].name.toUpperCase()}`}</span><span>DUEL ARENA · PROJETO DE FÃS</span></footer>
+      <footer className="arena-footer"><span>● {vsAI ? "TREINO CONTRA IA" : online ? "DUELO ONLINE" : "DUELO LOCAL"}</span><span>{aiTurn ? "TURNO DO OPONENTE" : `TURNO DE ${s.players[s.active].name.toUpperCase()}`}</span><span>DUEL ARENA · PROJETO DE FÃS</span></footer>
     </main>
     <CardZoom card={zoom?.card ?? null} owner={zoom?.owner} onClose={() => setZoom(null)} actions={modalActions} />
   </div>;
