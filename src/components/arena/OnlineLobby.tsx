@@ -21,7 +21,7 @@ export function OnlineLobby() {
     const id = newRoomCode();
     const { error } = await supabase.from("duel_rooms").insert({ id, host_id: user.id, host_name: profile?.nickname ?? "Anfitrião" });
     setBusy(false);
-    if (error) return toast.error("Não foi possível criar a sala.");
+    if (error) { toast.error("Não foi possível criar a sala."); return; }
     navigate({ to: "/duelo/$roomId", params: { roomId: id } });
   }
 
