@@ -34,7 +34,7 @@ export const Route = createFileRoute("/duelo/$roomId")({
 const Field = lazy(() => import("@/components/arena/Battlefield3D").then((m) => ({ default: m.Battlefield3D })));
 const PHASE_LABEL = { draw: "Compra", main1: "Principal 1", battle: "Batalha", main2: "Principal 2", end: "Final" } as const;
 
-export function newDuel(vsAI = false, names?: [string, string]) {
+function newDuel(vsAI = false, names?: [string, string]) {
   const seed = Date.now() % 100000;
   return createDuel(names ?? (vsAI ? ["Você", "IA Duelista"] : ["Jogador 1", "Jogador 2"]), [quickDeck(ALL_CARDS, seed), quickDeck(ALL_CARDS, seed + 99)], seed);
 }
@@ -48,9 +48,11 @@ function Duelo() {
 
 function ArenaEntry() {
   const { roomId } = Route.useParams();
-  if (isRoomCode(roomId)) return <OnlineRoom roomId={roomId} render={(online) => <Arena online={online} />} />;
+  if (isRoomCode(roomId)) return <OnlineRoom roomId={roomId} createState={createOnlineDuel} render={(online) => <Arena online={online} />} />;
   return <Arena />;
 }
+
+const createOnlineDuel = (names: [string, string]) => newDuel(false, names);
 
 export interface OnlineSeat { roomId: string; seat: PlayerId; initial: DuelState; names: [string, string] }
 
