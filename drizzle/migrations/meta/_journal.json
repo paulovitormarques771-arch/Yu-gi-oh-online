@@ -15,6 +15,13 @@
       "when": 1793058195475,
       "tag": "0001_create_decks",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793319512110,
+      "tag": "0002_duel_rooms",
+      "breakpoints": true
     }
   ]
 }

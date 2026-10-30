@@ -75,6 +75,42 @@ export type Database = {
           },
         ]
       }
+      duel_rooms: {
+        Row: {
+          created_at: string
+          guest_id: string | null
+          guest_name: string | null
+          host_id: string
+          host_name: string
+          id: string
+          state: Json | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          guest_id?: string | null
+          guest_name?: string | null
+          host_id: string
+          host_name?: string
+          id: string
+          state?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          guest_id?: string | null
+          guest_name?: string | null
+          host_id?: string
+          host_name?: string
+          id?: string
+          state?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -107,7 +143,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      join_duel_room: {
+        Args: { _name: string; _room: string }
+        Returns: {
+          created_at: string
+          guest_id: string | null
+          guest_name: string | null
+          host_id: string
+          host_name: string
+          id: string
+          state: Json | null
+          status: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "duel_rooms"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       [_ in never]: never
