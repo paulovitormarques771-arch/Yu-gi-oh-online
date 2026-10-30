@@ -7,6 +7,15 @@ import { MagicBackdrop } from "@/components/arena/MagicBackdrop";
 import { DuelButton, SiteNav } from "@/components/arena/SiteNav";
 import { HeroBackground } from "@/components/arena/HeroBackground";
 import { ArenaPreview } from "@/components/arena/ArenaPreview";
+import yugiKaiba from "@/assets/yugi-vs-kaiba.jpg.asset.json";
+import bakuraYugi from "@/assets/bakura-vs-yugi.png.asset.json";
+import duelTable from "@/assets/duel-table.jpg.asset.json";
+
+const SHOWCASE = [
+  { src: yugiKaiba.url, title: "Yugi vs Kaiba", text: "O confronto que acendeu a arena." },
+  { src: bakuraYugi.url, title: "Duelo Místico", text: "Yami Bakura desafia o Rei dos Jogos." },
+  { src: duelTable.url, title: "Mesa do duelista", text: "Monte seu campo, carta por carta." },
+];
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -71,6 +80,20 @@ function Landing() {
             allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
           />
+        </div>
+      </Section>
+
+      {/* Galeria animada */}
+      <Section title="Momentos épicos" kicker="Galeria">
+        <div className="grid gap-6 md:grid-cols-3">
+          {SHOWCASE.map((img, i) => (
+            <motion.figure key={img.title} initial={{ opacity: 0, y: 50, rotateX: 20 }} whileInView={{ opacity: 1, y: 0, rotateX: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.15, duration: 0.8 }}
+              className="showcase-card group">
+              <img src={img.src} alt={img.title} loading="lazy" className="showcase-img" />
+              <span className="showcase-shine" aria-hidden="true" />
+              <figcaption className="showcase-caption"><strong className="font-display">{img.title}</strong><span>{img.text}</span></figcaption>
+            </motion.figure>
+          ))}
         </div>
       </Section>
 
