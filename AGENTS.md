@@ -18,3 +18,4 @@
 - `arena-presentation.ts` governs inspection privacy and ends turns through the existing reducer; hidden opponent identities never enter card inspectors or accessible names — presentation changes must not leak private cards or bypass rules.
 - Three.js colors are resolved from global semantic CSS tokens through a canvas color conversion — Three.js cannot parse oklch directly.
 - Dev-only arena verification exposes `window.__arena.state` and `.act(action)`; `[data-scene-ready="1"]` signals the first scene frame — allows deterministic rule-flow checks without relying on software-GPU timing.
+- Online rooms: `duel_rooms` row holds the whole DuelState as jsonb; the active player writes it and both clients follow via Realtime; joining goes through the `join_duel_room` security-definer RPC; codes are 6 chars (`src/lib/online-room.ts`) and any non-code roomId stays a local/training duel.

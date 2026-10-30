@@ -4,7 +4,7 @@
 - [x] Etapa 3: coleção de cartas e construtor de decks
 - [x] Etapa 4: motor de regras e duelo local
 - [x] Etapa 5 (IA simples): treinamento contra IA
-- [ ] Etapa 6: multiplayer online por link
+- [x] Etapa 6: multiplayer online por link (salas com código)
 - [ ] Etapa 7: animações, recursos visuais e acabamento
 
 ## Pedido atual
@@ -12,3 +12,6 @@
 - [x] Ampliar cartas ao clicar, preservando as informações ocultas do adversário.
 - [x] Trocar o vídeo inicial para Akzba3ubOmI e atualizar a prévia do campo.
 - [x] Conferir o duelo e a apresentação em telas grandes e pequenas.
+- [x] Inspeção de cartas na coleção e no construtor de decks.
+- [x] Mais cartas clássicas (O Selo de Orichalcos e outras).
+- [x] Galeria animada na página inicial e holograma 3D na Central.
