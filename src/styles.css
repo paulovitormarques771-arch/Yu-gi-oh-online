@@ -358,3 +358,32 @@
   .arena-spark { opacity: .4; bottom: 40%; }
   .arena-card, .arena-action { transition: none; }
 }
+
+/* ===== Showcase gallery ===== */
+.showcase-card { position: relative; overflow: hidden; border-radius: 0.9rem; border: 1px solid var(--border); aspect-ratio: 4 / 3; box-shadow: 0 20px 50px -20px color-mix(in oklab, var(--primary) 50%, transparent); }
+.showcase-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; animation: showcase-drift 18s ease-in-out infinite alternate; transition: transform .6s; }
+.showcase-card:hover .showcase-img { transform: scale(1.12); }
+.showcase-shine { position: absolute; inset: 0; background: linear-gradient(115deg, transparent 35%, color-mix(in oklab, var(--primary) 35%, transparent) 50%, transparent 65%); background-size: 250% 100%; animation: showcase-shine 5s linear infinite; mix-blend-mode: screen; }
+.showcase-caption { position: absolute; inset-inline: 0; bottom: 0; display: flex; flex-direction: column; gap: 2px; padding: 2.5rem 1rem 1rem; background: linear-gradient(to top, var(--background), transparent); text-align: left; font-size: .85rem; color: var(--muted-foreground); }
+.showcase-caption strong { color: var(--foreground); font-size: 1.1rem; }
+@keyframes showcase-drift { from { transform: scale(1.04) translate(0,0); } to { transform: scale(1.14) translate(-3%, -2%); } }
+@keyframes showcase-shine { from { background-position: 150% 0; } to { background-position: -100% 0; } }
+
+/* ===== Central hologram ===== */
+.holo-banner { position: relative; height: 340px; overflow: hidden; border-radius: 1rem; border: 1px solid color-mix(in oklab, var(--primary) 50%, transparent); }
+.holo-banner-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; animation: showcase-drift 22s ease-in-out infinite alternate; }
+.holo-banner-shade { position: absolute; inset: 0; background: radial-gradient(ellipse at center, color-mix(in oklab, var(--background) 30%, transparent), color-mix(in oklab, var(--background) 80%, transparent)); }
+.holo-stage { position: absolute; left: 50%; top: 50%; width: 300px; height: 300px; transform: translate(-50%, -50%); perspective: 900px; }
+.holo-beam { position: absolute; left: 50%; bottom: 20px; width: 170px; height: 280px; transform: translateX(-50%); background: linear-gradient(to top, color-mix(in oklab, var(--primary) 55%, transparent), transparent); clip-path: polygon(30% 100%, 70% 100%, 100% 0, 0 0); filter: blur(4px); animation: holo-flicker 3s ease-in-out infinite; }
+.holo-base { position: absolute; left: 50%; bottom: 10px; width: 220px; height: 40px; transform: translateX(-50%); border-radius: 50%; border: 2px solid var(--primary); box-shadow: 0 0 30px var(--primary), inset 0 0 20px var(--primary); }
+.holo-ring { position: absolute; left: 50%; top: 50%; border-radius: 50%; border: 1px dashed color-mix(in oklab, var(--primary) 80%, transparent); transform-style: preserve-3d; }
+.holo-ring-a { width: 260px; height: 260px; margin: -130px; animation: holo-ring 9s linear infinite; }
+.holo-ring-b { width: 200px; height: 200px; margin: -100px; border-color: color-mix(in oklab, var(--gold) 70%, transparent); animation: holo-ring 6s linear infinite reverse; }
+.holo-carousel { position: absolute; inset: 0; transform-style: preserve-3d; animation: holo-spin 16s linear infinite; }
+.holo-slot { position: absolute; left: 50%; top: 50%; width: 64px; height: 93px; margin: -46px -32px; transform-style: preserve-3d; transform: rotateY(calc(360deg / var(--n) * var(--i))) translateZ(130px); }
+.holo-card { width: 100%; height: 100%; border-radius: 4px; opacity: .88; box-shadow: 0 0 18px var(--primary); animation: holo-float 7s ease-in-out infinite; }
+@keyframes holo-spin { from { transform: rotateX(-12deg) rotateY(0); } to { transform: rotateX(-12deg) rotateY(360deg); } }
+@keyframes holo-float { 0%, 100% { transform: translateY(80px); opacity: .35; } 50% { transform: translateY(-80px); opacity: .95; } }
+@keyframes holo-ring { from { transform: rotateX(75deg) rotateZ(0); } to { transform: rotateX(75deg) rotateZ(360deg); } }
+@keyframes holo-flicker { 0%, 100% { opacity: .55; } 50% { opacity: .9; } }
+@media (prefers-reduced-motion: reduce) { .holo-carousel, .holo-card, .holo-ring, .showcase-img, .showcase-shine, .holo-banner-art { animation: none; } }

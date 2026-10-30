@@ -11,6 +11,10 @@ import { SiteNav } from "@/components/arena/SiteNav";
 import { ProfilePanel } from "@/components/arena/ProfilePanel";
 import { DeckBuilder } from "@/components/arena/DeckBuilder";
 import { DeckList } from "@/components/arena/DeckList";
+import { CardZoom } from "@/components/arena/CardZoom";
+import { HoloDeck } from "@/components/arena/HoloDeck";
+import { OnlineLobby } from "@/components/arena/OnlineLobby";
+import type { CardData } from "@/data/catalog";
 
 export const Route = createFileRoute("/_authenticated/jogar")({
   head: () => ({
@@ -51,6 +55,7 @@ function Jogar() {
   const [editingDeck, setEditingDeck] = useState<string | null>(null);
   const [selected, setSelected] = useState("yugi-muto");
   const [q, setQ] = useState("");
+  const [zoom, setZoom] = useState<CardData | null>(null);
   const [kind, setKind] = useState<"all" | "monster" | "spell" | "trap">("all");
   const list = useMemo(
     () => ALL_CARDS.filter((c) => (kind === "all" || c.kind === kind) && c.name.toLowerCase().includes(q.toLowerCase())),
@@ -62,7 +67,8 @@ function Jogar() {
       <MagicBackdrop />
       <SiteNav />
       <main className="mx-auto max-w-7xl px-4 pb-20 pt-24">
-        <h1 className="text-3xl font-black md:text-5xl">Central do <span className="text-gold">Duelista</span></h1>
+        <HoloDeck />
+        <h1 className="mt-8 text-3xl font-black md:text-5xl">Central do <span className="text-gold">Duelista</span></h1>
         <Tabs value={tab} onValueChange={setTab} className="mt-8">
           <TabsList className="flex h-auto flex-wrap justify-start gap-1 bg-card/70">
             {tabs.map((t) => (
@@ -101,7 +107,7 @@ function Jogar() {
               ))}
               <span className="text-sm text-muted-foreground">{list.length} cartas da era clássica do anime</span>
             </div>
-            <div className="flex flex-wrap gap-5">{list.map((c) => <DuelCard key={c.id} card={c} />)}</div>
+            <div className="flex flex-wrap gap-5">{list.map((c) => <button key={c.id} type="button" onClick={() => setZoom(c)} aria-label={`Ver ${c.name}`} className="rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"><DuelCard card={c} /></button>)}</div>
           </TabsContent>
 
           <TabsContent value="criar" className="mt-6">
@@ -127,10 +133,11 @@ function Jogar() {
               </Link>
             </div>
           </TabsContent>
-          <TabsContent value="convidar" className="mt-6"><Soon title="Convidar amigo" text="Salas online com link de convite chegam na Etapa 6." /></TabsContent>
+          <TabsContent value="convidar" className="mt-6"><OnlineLobby /></TabsContent>
           <TabsContent value="historico" className="mt-6"><Soon title="Histórico de duelos" text="Suas partidas serão registradas a partir dos próximos duelos." /></TabsContent>
         </Tabs>
       </main>
+      <CardZoom card={zoom} onClose={() => setZoom(null)} />
     </div>
   );
 }

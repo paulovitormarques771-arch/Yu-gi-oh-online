@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, Minus, Plus, Save, X } from "lucide-react";
+import { Eye, Loader2, Minus, Plus, Save, X } from "lucide-react";
+import { CardZoom } from "@/components/arena/CardZoom";
+import type { CardData } from "@/data/catalog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ALL_CARDS, CARDS_BY_ID } from "@/data/cards";
@@ -36,6 +38,7 @@ export function DeckBuilder({
   const [q, setQ] = useState("");
   const [kind, setKind] = useState<keyof typeof kindLabels>("all");
   const [saving, setSaving] = useState(false);
+  const [zoom, setZoom] = useState<CardData | null>(null);
   const [loadingDeck, setLoadingDeck] = useState(false);
 
   useEffect(() => {
@@ -147,8 +150,8 @@ export function DeckBuilder({
           {list.map((c) => {
             const n = copiesOf(entries, c.id);
             return (
+              <div key={c.id} className="relative">
               <button
-                key={c.id}
                 onClick={() => add(c.id)}
                 className="group relative overflow-hidden rounded-md border border-border transition hover:border-primary hover:glow-primary"
                 title={c.name}
@@ -163,6 +166,8 @@ export function DeckBuilder({
                   + adicionar
                 </span>
               </button>
+              <button type="button" onClick={() => setZoom(c)} aria-label={`Ver ${c.name} em detalhes`} className="absolute left-1 top-1 rounded-full bg-background/85 p-1.5 text-primary transition hover:bg-primary hover:text-primary-foreground"><Eye className="h-3.5 w-3.5" /></button>
+              </div>
             );
           })}
         </div>
@@ -198,7 +203,7 @@ export function DeckBuilder({
             return (
               <div key={e.cardId} className="flex items-center gap-2 rounded-md border border-border bg-background/60 p-1.5">
                 <img src={cardImageSmallUrl(e.cardId)} alt="" loading="lazy" className="h-10 w-7 rounded-sm object-cover" />
-                <span className="min-w-0 flex-1 truncate text-xs font-semibold">{card.name}</span>
+                <button type="button" onClick={() => setZoom(card)} className="min-w-0 flex-1 truncate text-left text-xs font-semibold hover:text-primary">{card.name}</button>
                 <button onClick={() => setEntries(removeCard(entries, e.cardId))} className="rounded p-1 hover:bg-secondary" title="Remover">
                   <Minus className="h-3.5 w-3.5" />
                 </button>
@@ -222,6 +227,7 @@ export function DeckBuilder({
           )}
         </div>
       </aside>
+      <CardZoom card={zoom} onClose={() => setZoom(null)} actions={zoom ? <><Button onClick={() => add(zoom.id)}><Plus />Adicionar ao deck ({copiesOf(entries, zoom.id)}/3)</Button><Button variant="outline" disabled={!copiesOf(entries, zoom.id)} onClick={() => setEntries(removeCard(entries, zoom.id))}><Minus />Remover</Button></> : undefined} />
     </div>
   );
 }
