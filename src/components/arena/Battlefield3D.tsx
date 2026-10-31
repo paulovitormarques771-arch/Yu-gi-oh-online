@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 export type BattlefieldProps = {
   me: PlayerState; opponent: PlayerState; selected?: string | null; tributes?: string[]; target?: string | null;
   onOwnCard?: (uid: string, card: CardData) => void;
+  onOwnSpell?: (uid: string, card: CardData) => void;
   onOpponentCard?: (uid: string, card: CardData | null) => void;
   onInspect?: (card: CardData, enemy: boolean) => void;
   onDraw?: () => void; canDraw?: boolean; preview?: boolean;
@@ -106,7 +107,7 @@ function panels(p: BattlefieldProps): Panel[] {
     const selected = p.selected === zone.uid || p.tributes?.includes(zone.uid) || p.target === zone.uid;
     result.push({ id: `zone-${ri}-${i}`, x: (i - 2) * 1.17, y: .06, z: row.z,
       content: <ArenaCard card={shown} hidden={hidden} defensive={"position" in zone && zone.position === "def"} faceDown={!row.enemy && zone.faceDown} selected={selected}
-        onClick={() => row.enemy ? (row.spell ? shown && p.onInspect?.(shown, true) : p.onOpponentCard?.(zone.uid, shown)) : row.spell ? p.onInspect?.(zone.card, false) : p.onOwnCard?.(zone.uid, zone.card)} /> });
+        onClick={() => row.enemy ? (row.spell ? shown && p.onInspect?.(shown, true) : p.onOpponentCard?.(zone.uid, shown)) : row.spell ? (p.onOwnSpell ? p.onOwnSpell(zone.uid, zone.card) : p.onInspect?.(zone.card, false)) : p.onOwnCard?.(zone.uid, zone.card)} /> });
   }));
   [{x: -3.7, z: -2.5, player: p.opponent, enemy: true}, {x: 3.7, z: 2.5, player: p.me, enemy: false}].forEach((deck) => {
     result.push({ id: `deck-${deck.enemy}`, x: deck.x, y: .213, z: deck.z, content: <div>
