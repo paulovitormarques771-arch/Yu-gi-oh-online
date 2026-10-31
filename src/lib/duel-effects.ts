@@ -1,6 +1,6 @@
 import type { CardData } from "@/data/catalog";
 
-export type EffectTarget = "none" | "enemyMonster" | "ownMonster" | "monster" | "graveMonster" | "spellTrap";
+export type EffectTarget = "none" | "enemyMonster" | "ownMonster" | "monster" | "graveMonster" | "graveSpell" | "spellTrap";
 export type EffectTiming = "main" | "attack" | "summon" | "flip" | "passive";
 export interface EffectDefinition { operation: string; target: EffectTarget; timing: EffectTiming; amount?: number; continuous?: boolean }
 
@@ -29,9 +29,9 @@ export const EFFECTS: Record<number, EffectDefinition> = {
   14315573: { operation: "negate", target: "none", timing: "attack" },
   4206964: { operation: "trapHole", target: "none", timing: "summon" },
   53582587: { operation: "destroyAll", target: "none", timing: "summon" },
-  54652250: { operation: "bug", target: "none", timing: "flip" },
-  31560081: { operation: "faith", target: "none", timing: "flip" },
-  7089711: { operation: "bounce", target: "none", timing: "flip" },
+  54652250: { operation: "bug", target: "monster", timing: "flip" },
+  31560081: { operation: "faith", target: "graveSpell", timing: "flip" },
+  7089711: { operation: "bounce", target: "monster", timing: "flip" },
   38033121: { operation: "magicianGirl", target: "none", timing: "passive" },
   10000020: { operation: "slifer", target: "none", timing: "passive" },
   33396948: { operation: "exodia", target: "none", timing: "passive" },

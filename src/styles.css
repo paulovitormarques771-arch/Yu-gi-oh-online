@@ -254,8 +254,8 @@
 .arena-card-selected { border-color: var(--gold); outline: 2px solid var(--gold); box-shadow: var(--glow-gold); }
 .arena-card-defense { transform: rotate(90deg) scale(.77); }
 .arena-card-placeholder { display: flex; width: 100%; height: 100%; justify-content: center; align-items: center; padding: 4px; font-size: 10px; color: var(--gold); overflow-wrap: anywhere; }
-.arena-card-back { position: relative; width: 100%; height: 100%; overflow: hidden; border: 2px solid var(--gold); background: var(--arena-back-gradient); }
-.arena-card-back::before { content: ''; position: absolute; inset: 8%; border: 1px solid color-mix(in oklab, var(--gold) 65%, transparent); }
+.arena-card-back { position: relative; width: 100%; height: 100%; overflow: hidden; border: 0; background: var(--arena-surface); }
+.arena-card-back img { display: block; width: 100%; height: 100%; object-fit: fill; }
 .arena-card-back-ring { position: absolute; inset: 22% 12%; display: grid; place-items: center; border: 1px solid var(--gold); border-radius: 50%; background: var(--arena-surface); }
 .arena-card-back-ring svg { position: absolute; width: 44%; height: 44%; color: var(--gold); }
 .arena-card-back-ring svg + svg { transform: rotate(30deg); }
@@ -307,6 +307,11 @@
 .card-inspector-name { font-size: 25px; line-height: 1.25; overflow-wrap: anywhere; padding-right: 15px; }
 .card-inspector-detail { font-size: 16px; line-height: 1.6; color: var(--foreground); white-space: pre-line; margin-top: 20px; }
 .card-inspector-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 24px; }
+.arena-effect-panel { border-top: 1px solid var(--arena-green); padding: 12px; background: var(--arena-surface); }
+.arena-effect-panel h3 { color: var(--arena-green); font-family: var(--font-body); font-size: 14px; margin-bottom: 10px; }
+.arena-effect-targets { display: flex; flex-wrap: wrap; gap: 8px; max-height: 320px; overflow-y: auto; }
+.arena-effect-targets .arena-card { width: 70px; height: 102px; }
+.arena-effect-panel > button { margin-top: 10px; width: 100%; white-space: normal; height: auto; min-height: 38px; }
 @keyframes arena-camera-drift { from { transform: scale(1); } to { transform: scale(1.055) translateY(-1%); } }
 @keyframes arena-beam-travel { from { transform: translateX(-100px) rotate(28deg); opacity: .1; } to { transform: translateX(130px) rotate(28deg); opacity: .45; } }
 @media (min-width: 1700px) { .arena-main-grid { grid-template-columns: 210px minmax(0, 1fr) 240px; } }
