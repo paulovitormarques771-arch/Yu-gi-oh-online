@@ -34,7 +34,7 @@ type Move =
 export type Action = Move & { actor?: PlayerId };
 const other = (p: PlayerId): PlayerId => p === 0 ? 1 : 0;
 export const tributesNeeded = (level = 0) => level >= 8 ? 3 : level >= 6 ? 2 : level >= 5 ? 1 : 0;
-const fail = (message: string): never => { throw new Error(message); };
+function fail(message: string): never { throw new Error(message); }
 const mainPhase = (s: DuelState) => s.phase === "main1" || s.phase === "main2";
 export const decisionPlayer = (s: DuelState) => s.pending?.actor ?? s.active;
 
