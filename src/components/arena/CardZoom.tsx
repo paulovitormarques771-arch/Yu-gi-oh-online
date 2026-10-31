@@ -2,6 +2,8 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ATTRIBUTE_LABELS, type CardData } from "@/data/catalog";
+import { cardText, CARD_TYPE_PT } from "@/data/card-text";
+import { effectStatus } from "@/lib/duel-effects";
 
 const KIND_LABEL = { monster: "Monstro", spell: "Magia", trap: "Armadilha" } as const;
 
@@ -16,13 +18,15 @@ export function CardZoom({ card, owner, onClose, actions }: { card: CardData | n
           {card.imageUrl ? <img src={card.imageUrl} alt={card.name} width={295} height={430} className="card-inspector-image" /> : <div className="flex aspect-[59/86] items-center justify-center bg-secondary p-4 text-center font-display">{card.name}</div>}
           <div className="min-w-0 space-y-4">
             {owner && <p className="text-xs font-bold text-arena-cyan">{owner.toUpperCase()}</p>}
-            <Dialog.Title className="card-inspector-name font-display font-bold">{card.name}</Dialog.Title>
+            <Dialog.Title className="card-inspector-name font-display font-bold">{cardText(card).name}</Dialog.Title>
+            {cardText(card).name !== card.name && <p className="text-sm text-muted-foreground">{card.name}</p>}
             <div className="flex flex-wrap gap-2 text-sm">
-              <Tag>{KIND_LABEL[card.kind]}</Tag>{card.type && <Tag>{card.type}</Tag>}{card.race && <Tag>{card.race}</Tag>}
+              <Tag>{KIND_LABEL[card.kind]}</Tag>{card.type && <Tag>{CARD_TYPE_PT[card.type] ?? card.type}</Tag>}{card.race && <Tag>{CARD_TYPE_PT[card.race] ?? card.race}</Tag>}
               {card.attribute && <Tag>{ATTRIBUTE_LABELS[card.attribute] ?? card.attribute}</Tag>}{card.level ? <Tag>Nível {card.level}</Tag> : null}
             </div>
             {card.kind === "monster" && <div className="flex gap-4"><Stat label="ATK" value={card.atk} /><Stat label="DEF" value={card.def} /></div>}
-            <p className="card-inspector-detail">{card.desc}</p>
+            <p className="card-inspector-detail" lang="pt-BR">{cardText(card).desc}</p>
+            <p className="text-xs text-muted-foreground">{effectStatus(card)}</p>
             {actions && <div className="card-inspector-actions">{actions}</div>}
           </div>
         </div>
