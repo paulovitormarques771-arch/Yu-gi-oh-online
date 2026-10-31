@@ -15,7 +15,7 @@ export function inspectableCard(card: CardData, owner: PlayerId, viewer: PlayerI
 
 /** Skip the remaining phases through the same reducer; do not invent turn rules. */
 export function finishTurn(state: DuelState): DuelState {
-  if (state.phase === "draw" || state.winner !== null) return state;
+  if (state.phase === "draw" || state.winner !== null || state.pending) return state;
   let next = state;
   for (let i = 0; i < 4 && next.active === state.active; i++) next = applyAction(next, { type: "nextPhase" });
   return next;
