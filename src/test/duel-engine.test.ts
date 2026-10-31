@@ -13,8 +13,11 @@ describe("duel engine", () => {
     expect(s.players[0].lp).toBe(START_LP);
     expect(s.players[0].hand).toHaveLength(5);
   });
-  it("tributes: level 5-6 need 1, 7+ need 2", () => {
-    expect(tributesNeeded(4)).toBe(0); expect(tributesNeeded(6)).toBe(1); expect(tributesNeeded(7)).toBe(2);
+  it("5 estrelas exigem 1 sacrifício", () => expect(tributesNeeded(5)).toBe(1));
+  it("6 estrelas exigem 2 sacrifícios", () => expect(tributesNeeded(6)).toBe(2));
+  it("7 estrelas exigem 2 sacrifícios", () => expect(tributesNeeded(7)).toBe(2));
+  it("8 estrelas ou mais exigem 3 sacrifícios", () => {
+    expect(tributesNeeded(8)).toBe(3); expect(tributesNeeded(10)).toBe(3); expect(tributesNeeded(12)).toBe(3);
   });
   it("allows only one normal summon per turn", () => {
     let s = setup();
