@@ -10,7 +10,7 @@
 ## Pedido atual
 - [ ] Aplicar sacrifícios: 5 = 1, 6–7 = 2, 8+ = 3; impedir tributos duplicados.
 - [ ] Mostrar verso para todos os monstros baixados, preservando inspeção apenas pelo dono.
-- [ ] Usar verso clássico autorizado (aguardando imagem enviada pelo usuário).
+- [ ] Usar a imagem enviada do verso clássico em cartas ocultas e baralhos.
 - [ ] Descrições em português no zoom para monstros, magias e armadilhas.
 - [ ] Executar efeitos de cartas com seleção de alvos e respostas de armadilhas.
 - [ ] Validar regras e fluxos reais na arena.
