@@ -281,6 +281,6 @@ function Arena({ online }: { online?: OnlineSeat }) {
     <CardZoom card={zoom?.card ?? null} owner={zoom?.owner} onClose={() => setZoom(null)} actions={modalActions} />
     {s.winner === null && phaseNotice && <PhaseAnnouncement key={`${phaseNotice.turn}-${phaseNotice.label}`} {...phaseNotice} />}
     <DamageAnnouncement event={combat} view={view} />
-    <DuelResult winner={s.winner === null ? null : s.winner === (online ? online.seat : 0)} onReplay={() => replay()} canReplay={!online || online.seat === 0} />
+    <DuelResult winner={s.winner === null ? null : s.winner === (online ? online.seat : 0)} onReplay={() => replay()} />
   </div>;
 }

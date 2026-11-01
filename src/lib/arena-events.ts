@@ -11,8 +11,9 @@ export type CombatEvent = {
 export function combatEvent(before: DuelState, after: DuelState, id: number): CombatEvent | null {
   if (after.turn < before.turn || (before.winner !== null && after.winner === null)) return null;
   let attack: AttackContext | undefined;
-  if (before.pending?.kind === "response") attack = before.pending.attack;
-  if (before.pending?.kind === "effect") attack = before.pending.afterAttack;
+  if (after.lastBattle && after.lastBattle.sequence !== before.lastBattle?.sequence) attack = after.lastBattle;
+  if (!attack && before.pending?.kind === "response") attack = before.pending.attack;
+  if (!attack && before.pending?.kind === "effect") attack = before.pending.afterAttack;
   if (!attack) {
     for (const owner of [0, 1] as const) {
       const monster = after.players[owner].monsters.find((m) => m?.attacked && !before.players[owner].monsters.find((old) => old?.uid === m.uid)?.attacked);

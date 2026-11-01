@@ -20,7 +20,7 @@ export function PhaseAnnouncement({ label, turn, player }: { label: string; turn
   return <div className="arena-phase-announcement" role="status" aria-live="polite"><div><small>TURNO {turn} · {player}</small><strong>{label}</strong></div></div>;
 }
 
-export function DuelResult({ winner, onReplay, canReplay = true }: { winner: boolean | null; onReplay: () => void; canReplay?: boolean }) {
+export function DuelResult({ winner, onReplay }: { winner: boolean | null; onReplay: () => void }) {
   return <Dialog.Root open={winner !== null}>
     <Dialog.Portal>
       <Dialog.Overlay className="duel-result-overlay" />
@@ -30,7 +30,7 @@ export function DuelResult({ winner, onReplay, canReplay = true }: { winner: boo
         <span className="duel-result-eyebrow">DUELO ENCERRADO</span>
         <Dialog.Title className="duel-result-title">{winner ? "VOCÊ VENCEU!" : "VOCÊ PERDEU!"}</Dialog.Title>
         <div className="duel-result-actions">
-          <Button size="lg" className="duel-replay-button" disabled={!canReplay} onClick={onReplay}><RotateCcw />{canReplay ? "Jogar novamente" : "Aguardando revanche"}</Button>
+          <Button size="lg" className="duel-replay-button" onClick={onReplay}><RotateCcw />Jogar novamente</Button>
           <Button asChild size="lg" variant="outline"><Link to="/jogar"><Home />Voltar ao menu</Link></Button>
         </div>
       </Dialog.Content>

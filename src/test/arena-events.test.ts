@@ -25,4 +25,12 @@ describe("actual combat presentation values", () => {
     const next = structuredClone(s); next.players[1].monsters[0] = null;
     expect(combatEvent(s, next, 1)).toBeNull();
   });
+  it("identifies the actual hit monster even when it survives with no LP damage", () => {
+    const s = createDuel(["A", "B"], [Array(10).fill(card), Array(10).fill(card)], 1);
+    s.turn = 2; s.phase = "battle"; s.players[0].monsters[0] = monster;
+    s.players[1].monsters[0] = { ...monster, uid: "defender", position: "def", card: { ...card, def: 1000 } };
+    const next = applyAction(s, { type: "attack", attackerUid: "a", targetUid: "defender" });
+    expect(combatEvent(s, next, 1)?.targetUid).toBe("defender");
+    expect(combatEvent(s, next, 1)?.damages).toEqual([]);
+  });
 });
