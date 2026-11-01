@@ -3,6 +3,8 @@ import { applyAction, createDuel, START_LP } from "@/lib/duel-engine";
 import { aiNextAction } from "@/lib/duel-ai";
 import type { CardData } from "@/data/catalog";
 import { emptyPlaystyle } from "@/lib/duel-training";
+import { trainingDeck } from "@/lib/duel-training";
+import { ALL_CARDS } from "@/data/cards";
 
 const deck = (a: number): CardData[] => Array.from({ length: 40 }, (_, i) => ({ id: i, name: `M${i}`, kind: "monster", atk: a, def: 500, level: 4, desc: "" }));
 
@@ -55,4 +57,24 @@ describe("AI opponent", () => {
     const pending = applyAction(s, { type: "attack", attackerUid: "a" });
     expect(aiNextAction(pending, "normal")).toMatchObject({ type: "activateField", uid: "mirror" });
   });
+  it("hard adapts attack risk after observing frequent trap activations", () => {
+    const s = createDuel(["Você", "IA"], [deck(1000), deck(2000)], 3);
+    s.turn = 2; s.active = 1; s.phase = "battle";
+    const h = s.players[1].hand[0]; if (!h) throw new Error("Missing card");
+    s.players[1].monsters[0] = { uid: "a", card: h.card, position: "atk", faceDown: false, attacked: false, summonedTurn: 1 };
+    s.players[0].monsters[0] = { uid: "target", card: { ...h.card, atk: 1850 }, position: "atk", faceDown: false, attacked: false, summonedTurn: 1 };
+    s.players[0].spells = Array.from({ length: 5 }, (_, i) => ({ uid: `t${i}`, card: { id: 44095762, name: "Hidden", kind: "trap" as const, desc: "" }, faceDown: true, setTurn: 1 }));
+    const cautious = { ...emptyPlaystyle(), attacks: 2, traps: 10, sets: 20 };
+    expect(aiNextAction(s, "hard", emptyPlaystyle()).type).toBe("attack");
+    expect(aiNextAction(s, "hard", cautious).type).toBe("nextPhase");
+  });
+  for (const difficulty of ["easy", "normal", "hard"] as const) {
+    it(`${difficulty} plays a whole duel without illegal moves or getting stuck`, () => {
+      let s = createDuel(["A", "B"], [trainingDeck(ALL_CARDS, 4, difficulty), trainingDeck(ALL_CARDS, 5, difficulty)], 3);
+      let moves = 0;
+      while (s.winner === null && moves < 250) { const before = s; s = applyAction(s, aiNextAction(s, difficulty)); expect(s).not.toBe(before); moves++; }
+      expect(s.winner).not.toBeNull();
+      expect(moves).toBeLessThan(250);
+    });
+  }
 });
