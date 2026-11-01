@@ -412,7 +412,7 @@
 .duel-result-overlay { position: fixed; inset: 0; z-index: 60; background: var(--background); }
 .duel-result { position: fixed; inset: 0; z-index: 61; isolation: isolate; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; padding: 24px; text-align: center; overflow: auto; background: var(--background); }
 .duel-result .arena-background-image { opacity: .38; }
-.duel-result-trophy { width: 78px; height: 78px; color: var(--gold); filter: drop-shadow(var(--glow-gold)); }
+.duel-result-trophy { width: 78px; height: 78px; color: var(--gold); }
 .duel-result-eyebrow { font-size: 16px; color: var(--arena-cyan); }
 .duel-result-title { font-size: 96px; line-height: 1.15; font-weight: 900; max-width: 100%; color: var(--gold); overflow-wrap: anywhere; text-shadow: var(--glow-gold); animation: result-reveal .7s ease-out both; }
 .duel-result-defeat .duel-result-title { color: var(--destructive); text-shadow: var(--arena-damage-glow); }

@@ -88,7 +88,7 @@ function actionBias(s: DuelState, action: Action, actor: PlayerId, profile: Play
   if (action.type === "nextPhase") return -12;
   if (action.type === "attack") {
     const traps = enemy.spells.filter((m) => m?.faceDown).length;
-    return 35 - traps * (20 + Math.min(180, profile.traps / Math.max(1, profile.attacks) * 200));
+    return 35 - traps * (20 + Math.min(420, profile.traps / Math.max(1, profile.attacks) * 280));
   }
   if (action.type === "activateSpell" || action.type === "activateField") {
     const card = action.type === "activateSpell" ? s.players[actor].hand.find((h) => h.uid === action.handUid)?.card : s.players[actor].spells.find((h) => h?.uid === action.uid)?.card;
@@ -136,6 +136,10 @@ function easyAction(s: DuelState): Action {
   if (s.phase === "draw") return { type: "draw" };
 
   if (s.phase === "main1") {
+    const flip = me.monsters.find((m) => m?.faceDown && m.summonedTurn !== s.turn);
+    if (flip) return { type: "changePosition", uid: flip.uid };
+    const fieldMagic = me.spells.find((m) => m?.faceDown && m.card.kind === "spell" && effectFor(m.card)?.timing === "main");
+    if (fieldMagic) { try { const action: Action = { type: "activateField", uid: fieldMagic.uid }; applyAction(s, action); return action; } catch { /* Not every set spell has a valid target. */ } }
     const magic = me.hand.find((h) => {
       const effect = effectFor(h.card);
       if (h.card.kind !== "spell" || effect?.timing !== "main") return false;
@@ -176,7 +180,7 @@ function easyAction(s: DuelState): Action {
       if (targets.length === 0) return { type: "attack", attackerUid: a.uid };
       const A = monsterAtk(s, actor, a);
       const beatable = targets
-        .filter((t) => (t.position === "atk" ? monsterAtk(s, actor === 0 ? 1 : 0, t) < A : !t.faceDown && monsterDef(s, actor === 0 ? 1 : 0, t) < A))
+        .filter((t) => (t.position === "atk" ? monsterAtk(s, actor === 0 ? 1 : 0, t) <= A : monsterDef(s, actor === 0 ? 1 : 0, t) < A))
         .sort((x, y) => (y.card.atk ?? 0) - (x.card.atk ?? 0));
       if (beatable[0]) return { type: "attack", attackerUid: a.uid, targetUid: beatable[0].uid };
     }
