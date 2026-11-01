@@ -8,6 +8,12 @@
 - [ ] Etapa 7: animações, recursos visuais e acabamento
 
 ## Pedido atual
+- [ ] Final em tela toda com vitória/derrota, jogar novamente e voltar ao menu.
+- [ ] Impactos holográficos 3D, dano numérico real e animação dos LP.
+- [ ] IA Fácil/Normal/Difícil estratégica e adaptação local aos hábitos de jogo.
+- [ ] Ataque guiado, seleção de sacrifícios e invocação destacada.
+- [ ] Próxima fase grande e anúncio de cada mudança de fase.
+- [ ] Testes de regras/IA e validação do fluxo na arena.
 - [ ] Aplicar sacrifícios: 5 = 1, 6–7 = 2, 8+ = 3; impedir tributos duplicados.
 - [ ] Mostrar verso para todos os monstros baixados, preservando inspeção apenas pelo dono.
 - [ ] Usar a imagem enviada do verso clássico em cartas ocultas e baralhos.
