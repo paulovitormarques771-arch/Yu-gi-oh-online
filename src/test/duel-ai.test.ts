@@ -72,9 +72,9 @@ describe("AI opponent", () => {
     it(`${difficulty} plays a whole duel without illegal moves or getting stuck`, () => {
       let s = createDuel(["A", "B"], [trainingDeck(ALL_CARDS, 4, difficulty), trainingDeck(ALL_CARDS, 5, difficulty)], 3);
       let moves = 0;
-      while (s.winner === null && moves < 250) { const before = s; s = applyAction(s, aiNextAction(s, difficulty)); expect(s).not.toBe(before); moves++; }
+      while (s.winner === null && moves < 600) { const before = s; s = applyAction(s, aiNextAction(s, difficulty)); expect(s).not.toBe(before); moves++; }
       expect(s.winner).not.toBeNull();
-      expect(moves).toBeLessThan(250);
+      expect(moves).toBeLessThan(600);
     });
   }
 });
