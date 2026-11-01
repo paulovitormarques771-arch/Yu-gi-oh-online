@@ -6,6 +6,7 @@ import { ArenaCard, CardBack } from "@/components/arena/ArenaCard";
 import type { CardData } from "@/data/catalog";
 import type { PlayerState } from "@/lib/duel-engine";
 import { cn } from "@/lib/utils";
+import type { CombatEvent } from "@/lib/arena-events";
 
 export type BattlefieldProps = {
   me: PlayerState; opponent: PlayerState; selected?: string | null; tributes?: string[]; target?: string | null;
@@ -14,6 +15,7 @@ export type BattlefieldProps = {
   onOpponentCard?: (uid: string, card: CardData | null) => void;
   onInspect?: (card: CardData, enemy: boolean) => void;
   onDraw?: () => void; canDraw?: boolean; preview?: boolean;
+  combat?: CombatEvent | null; viewer?: 0 | 1; attackers?: string[]; choosingTributes?: boolean;
 };
 
 function useArenaColors() {
@@ -107,6 +109,7 @@ function panels(p: BattlefieldProps): Panel[] {
     const selected = p.selected === zone.uid || p.tributes?.includes(zone.uid) || p.target === zone.uid;
     result.push({ id: `zone-${ri}-${i}`, x: (i - 2) * 1.17, y: .06, z: row.z,
       content: <ArenaCard card={shown} hidden={hidden} defensive={"position" in zone && zone.position === "def"} faceDown={!row.enemy && zone.faceDown} selected={selected}
+        className={cn(p.combat?.attackerUid === zone.uid && "arena-card-strike", p.combat?.targetUid === zone.uid && "arena-card-hit", !row.enemy && !row.spell && p.attackers?.includes(zone.uid) && "arena-card-available", !row.enemy && !row.spell && p.choosingTributes && "arena-card-tribute")}
         onClick={() => row.enemy ? (row.spell ? shown && p.onInspect?.(shown, true) : p.onOpponentCard?.(zone.uid, shown)) : row.spell ? (p.onOwnSpell ? p.onOwnSpell(zone.uid, zone.card) : p.onInspect?.(zone.card, false)) : p.onOwnCard?.(zone.uid, zone.card)} /> });
   }));
   [{x: -3.7, z: -2.5, player: p.opponent, enemy: true}, {x: 3.7, z: 2.5, player: p.me, enemy: false}].forEach((deck) => {
@@ -120,6 +123,14 @@ function panels(p: BattlefieldProps): Panel[] {
     result.push({ id: `grave-${g.enemy}`, x: g.x, y: .05, z: g.z,
       content: last ? <ArenaCard card={last} onClick={() => p.onInspect?.(last, g.enemy)} /> : <div className="arena-grave-mark"><span>◇</span><small>CEMITÉRIO</small></div> });
   });
+  if (p.combat) {
+    const event = p.combat;
+    const own = event.owner === (p.viewer ?? 0);
+    if (event.attackerCard) result.push({ id: `hologram-${event.id}`, x: 0, y: 1.25, z: own ? .6 : -.6,
+      content: <div className="arena-combat-hologram" aria-hidden="true">{event.attackerCard.imageUrl ? <img src={event.attackerCard.imageUrl} alt="" /> : <span>{event.attackerCard.name}</span>}</div> });
+    for (const ghost of event.destroyed) result.push({ id: `hit-${event.id}-${ghost.uid}`, x: (ghost.index - 2) * 1.17, y: .08, z: ghost.owner === (p.viewer ?? 0) ? 1.02 : -1.02,
+      content: <div className="arena-destroyed-ghost" aria-hidden="true"><ArenaCard card={ghost.card} /></div> });
+  }
   return result;
 }
 
@@ -150,7 +161,26 @@ function ProjectPanel({ panel, refs }: { panel: Panel; refs: PanelRefs }) {
     const matrix=[(b.x-a.x+g*b.x)/width,(b.y-a.y+g*b.y)/width,0,g/width,(d.x-a.x+h*d.x)/height,(d.y-a.y+h*d.y)/height,0,h/height,0,0,1,0,a.x,a.y,0,1];
     objectEl.style.transform = `matrix3d(${matrix.join(",")})`;
   });
-  return <group ref={group} position={[panel.x,panel.y,panel.z]} rotation={[-Math.PI/2,0,0]} />;
+  return <group ref={group} position={[panel.x,panel.y,panel.z]} rotation={[panel.id.startsWith("hologram-") ? -.12 : -Math.PI/2,0,0]} />;
+}
+
+function CombatPulse({ event, viewer, reduced }: { event: CombatEvent; viewer: 0 | 1; reduced: boolean }) {
+  const group = useRef<Group>(null);
+  const start = useRef(performance.now());
+  const colors = useArenaColors();
+  const own = event.owner === viewer;
+  const z = own ? -1.02 : 1.02;
+  useFrame(() => {
+    if (!group.current || reduced) return;
+    const t = Math.min(1, (performance.now() - start.current) / 1500);
+    group.current.scale.setScalar(.25 + t * 2.5);
+    group.current.rotation.y = t * Math.PI;
+  });
+  return <group ref={group} position={[0, .3, z]}>
+    <mesh rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[.38, .46, 40]} /><meshBasicMaterial color={colors.gold} transparent opacity={.65} toneMapped={false} /></mesh>
+    <mesh position={[0, .45, 0]}><coneGeometry args={[.8, 1.1, 8, 1, true]} /><meshBasicMaterial color={colors.cyan} wireframe transparent opacity={.6} toneMapped={false} /></mesh>
+    <pointLight intensity={8} color={colors.gold} distance={4} />
+  </group>;
 }
 
 function Scene({ onReady, reduced, panelList, panelRefs, ...p }: BattlefieldProps & { onReady: () => void; reduced: boolean; panelList: Panel[]; panelRefs: PanelRefs }) {
@@ -194,6 +224,7 @@ function Scene({ onReady, reduced, panelList, panelRefs, ...p }: BattlefieldProp
     <Frame x={-3.7} z={1.8} color={colors.magic} />
     {panelList.map((panel) => <ProjectPanel key={panel.id} panel={panel} refs={panelRefs} />)}
     <Energy reduced={reduced} onReady={onReady} />
+    {p.combat && <CombatPulse key={p.combat.id} event={p.combat} viewer={p.viewer ?? 0} reduced={reduced} />}
   </>;
 }
 
