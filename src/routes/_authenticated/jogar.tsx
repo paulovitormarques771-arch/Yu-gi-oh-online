@@ -15,6 +15,9 @@ import { CardZoom } from "@/components/arena/CardZoom";
 import { HoloDeck } from "@/components/arena/HoloDeck";
 import { OnlineLobby } from "@/components/arena/OnlineLobby";
 import type { CardData } from "@/data/catalog";
+import { Button } from "@/components/ui/button";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { DIFFICULTY_LABELS, isDifficulty, type AIDifficulty } from "@/lib/duel-training";
 
 export const Route = createFileRoute("/_authenticated/jogar")({
   head: () => ({
@@ -56,6 +59,7 @@ function Jogar() {
   const [selected, setSelected] = useState("yugi-muto");
   const [q, setQ] = useState("");
   const [zoom, setZoom] = useState<CardData | null>(null);
+  const [difficulty, setDifficulty] = useState<AIDifficulty>("normal");
   const [kind, setKind] = useState<"all" | "monster" | "spell" | "trap">("all");
   const list = useMemo(
     () => ALL_CARDS.filter((c) => (kind === "all" || c.kind === kind) && c.name.toLowerCase().includes(q.toLowerCase())),
@@ -124,14 +128,14 @@ function Jogar() {
             />
           </TabsContent>
           <TabsContent value="ia" className="mt-6">
-            <div className="rounded-xl border border-border bg-card/60 p-10 text-center">
+            <section className="training-select">
               <Bot className="mx-auto h-10 w-10 text-primary" />
               <h3 className="mt-2 text-2xl font-bold">Treinar contra a IA</h3>
-              <p className="mt-2 text-muted-foreground">Enfrente um oponente controlado pelo computador que compra, invoca e ataca.</p>
-              <Link to="/duelo/$roomId" params={{ roomId: "treino" }} className="mt-6 inline-flex items-center gap-2 rounded-md bg-energy px-6 py-3 font-display font-bold text-primary-foreground glow-primary">
-                <Swords className="h-5 w-5" /> Duelar contra a IA
-              </Link>
-            </div>
+              <ToggleGroup type="single" value={difficulty} className="mt-6" aria-label="Dificuldade da IA" onValueChange={(value) => { if (isDifficulty(value)) setDifficulty(value); }}>
+                {Object.entries(DIFFICULTY_LABELS).map(([value, label]) => <ToggleGroupItem value={value} key={value} variant="outline">{label}</ToggleGroupItem>)}
+              </ToggleGroup>
+              <Button asChild size="lg" className="mt-6"><Link to="/duelo/$roomId" params={{ roomId: "treino" }} search={{ difficulty }}><Swords />Duelar contra a IA</Link></Button>
+            </section>
           </TabsContent>
           <TabsContent value="convidar" className="mt-6"><OnlineLobby /></TabsContent>
           <TabsContent value="historico" className="mt-6"><Soon title="Histórico de duelos" text="Suas partidas serão registradas a partir dos próximos duelos." /></TabsContent>

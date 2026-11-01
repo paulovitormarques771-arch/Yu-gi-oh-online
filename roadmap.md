@@ -8,12 +8,18 @@
 - [ ] Etapa 7: animações, recursos visuais e acabamento
 
 ## Pedido atual
-- [ ] Aplicar sacrifícios: 5 = 1, 6–7 = 2, 8+ = 3; impedir tributos duplicados.
-- [ ] Mostrar verso para todos os monstros baixados, preservando inspeção apenas pelo dono.
-- [ ] Usar a imagem enviada do verso clássico em cartas ocultas e baralhos.
-- [ ] Descrições em português no zoom para monstros, magias e armadilhas.
-- [ ] Executar efeitos de cartas com seleção de alvos e respostas de armadilhas.
-- [ ] Validar regras e fluxos reais na arena.
+- [x] Final em tela toda com vitória/derrota, jogar novamente e voltar ao menu.
+- [x] Impactos holográficos 3D, dano numérico real e animação dos LP.
+- [x] IA Fácil/Normal/Difícil estratégica e adaptação local aos hábitos de jogo.
+- [x] Ataque guiado, seleção de sacrifícios e invocação destacada.
+- [x] Próxima fase grande e anúncio de cada mudança de fase.
+- [x] Testes de regras/IA e validação do fluxo na arena.
+- [x] Aplicar sacrifícios: 5 = 1, 6–7 = 2, 8+ = 3; impedir tributos duplicados.
+- [x] Mostrar verso para todos os monstros baixados, preservando inspeção apenas pelo dono.
+- [x] Usar a imagem enviada do verso clássico em cartas ocultas e baralhos.
+- [x] Descrições em português no zoom para monstros, magias e armadilhas.
+- [x] Executar efeitos clássicos implementados com seleção de alvos e respostas de armadilhas; demais efeitos sinalizados como indisponíveis.
+- [x] Validar regras e fluxos reais na arena.
 - [x] Refazer a arena com perspectiva 3D, zonas neon, baralhos, cemitério, HUD e ações laterais.
 - [x] Ampliar cartas ao clicar, preservando as informações ocultas do adversário.
 - [x] Trocar o vídeo inicial para Akzba3ubOmI e atualizar a prévia do campo.

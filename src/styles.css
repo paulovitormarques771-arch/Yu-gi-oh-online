@@ -125,6 +125,9 @@
   --arena-back-gradient: repeating-conic-gradient(from 20deg, var(--arena-surface) 0deg 14deg, color-mix(in oklab, var(--gold) 32%, var(--arena-surface)) 14deg 17deg, var(--arena-surface) 17deg 30deg);
   --arena-button-gradient: linear-gradient(180deg, color-mix(in oklab, var(--primary) 35%, var(--arena-surface)), var(--arena-surface));
   --arena-vignette: linear-gradient(180deg, var(--background), transparent 25%, transparent 65%, var(--background));
+  --arena-damage-glow: 0 0 24px color-mix(in oklab, var(--destructive) 80%, transparent);
+  --arena-result-shade: color-mix(in oklab, var(--background) 85%, transparent);
+  --arena-damage-wash: linear-gradient(100deg, color-mix(in oklab, var(--destructive) 24%, transparent), transparent 40%, transparent 60%, color-mix(in oklab, var(--destructive) 24%, transparent));
 }
 
 @layer base {
@@ -392,3 +395,68 @@
 @keyframes holo-ring { from { transform: rotateX(75deg) rotateZ(0); } to { transform: rotateX(75deg) rotateZ(360deg); } }
 @keyframes holo-flicker { 0%, 100% { opacity: .55; } 50% { opacity: .9; } }
 @media (prefers-reduced-motion: reduce) { .holo-carousel, .holo-card, .holo-ring, .showcase-img, .showcase-shine, .holo-banner-art { animation: none; } }
+
+/* Combat feedback is presentation-only; the reducer always owns LP and legality. */
+.arena-hud { position: relative; }
+.arena-hud-damage { position: absolute; right: 8px; top: -15px; z-index: 20; color: var(--destructive-foreground); background: var(--destructive); border: 1px solid var(--destructive-foreground); padding: 0 7px; font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; box-shadow: var(--arena-damage-glow); animation: damage-float 1.6s ease-out both; pointer-events: none; }
+.arena-damage-screen { position: fixed; inset: 0; z-index: 55; pointer-events: none; background: var(--arena-damage-wash); animation: damage-screen 1.6s ease-out both; }
+.arena-damage-number { position: absolute; top: 36%; display: flex; flex-direction: column; align-items: center; color: var(--destructive-foreground); text-shadow: var(--arena-damage-glow); }
+.damage-own { left: 15%; } .damage-enemy { right: 15%; }
+.arena-damage-number span { font-size: 14px; font-weight: 700; }
+.arena-damage-number strong { font-size: 90px; font-weight: 900; line-height: 1.15; font-variant-numeric: tabular-nums; color: var(--destructive); }
+.arena-damage-number small { font-size: 16px; }
+.arena-phase-announcement { position: fixed; inset: 0; z-index: 45; display: grid; place-items: center; pointer-events: none; animation: phase-reveal 1.45s ease both; }
+.arena-phase-announcement > div { width: 100%; padding: 36px 16px; background: var(--arena-result-shade); border-block: 1px solid var(--arena-cyan); text-align: center; box-shadow: var(--arena-glow); }
+.arena-phase-announcement small { display: block; color: var(--muted-foreground); font-size: 16px; }
+.arena-phase-announcement strong { display: block; color: var(--arena-cyan); font-family: var(--font-display); font-size: 58px; line-height: 1.2; overflow-wrap: anywhere; }
+.duel-result-overlay { position: fixed; inset: 0; z-index: 60; background: var(--background); }
+.duel-result { position: fixed; inset: 0; z-index: 61; isolation: isolate; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; padding: 24px; text-align: center; overflow: auto; background: var(--background); }
+.duel-result .arena-background-image { opacity: .38; }
+.duel-result-trophy { width: 78px; height: 78px; color: var(--gold); }
+.duel-result-eyebrow { font-size: 16px; color: var(--arena-cyan); }
+.duel-result-title { font-size: 96px; line-height: 1.15; font-weight: 900; max-width: 100%; color: var(--gold); overflow-wrap: anywhere; text-shadow: var(--glow-gold); animation: result-reveal .7s ease-out both; }
+.duel-result-defeat .duel-result-title { color: var(--destructive); text-shadow: var(--arena-damage-glow); }
+.duel-result-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; }
+.duel-result-actions > a, .duel-result-actions > button { min-height: 52px; min-width: 200px; font-size: 18px; }
+.duel-replay-button { background: var(--gold); color: var(--gold-foreground); }
+.arena-selection-prompt { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 50px; padding: 6px 12px; background: var(--arena-surface); border-block: 1px solid var(--gold); color: var(--gold); font-size: 16px; }
+.arena-selection-prompt strong { overflow-wrap: anywhere; }
+.arena-next-phase { display: flex; width: calc(100% - 24px); margin: 0 12px 12px; min-height: 64px; height: auto; padding: 12px 8px; white-space: normal; background: var(--arena-green); color: var(--primary-foreground); border: 1px solid var(--arena-green); font-size: 19px; font-weight: 800; line-height: 1.1; }
+.arena-summon-action { min-height: 54px; height: auto; white-space: normal; border-color: var(--gold); font-size: 15px; }
+.arena-summon-ready { background: var(--gold); color: var(--gold-foreground); box-shadow: var(--glow-gold); animation: summon-ready 1.8s ease-in-out infinite; }
+.arena-difficulty { padding: 10px 6px; gap: 2px; border-bottom: 1px solid var(--arena-edge); }
+.arena-difficulty > button { padding: 0 8px; min-width: 0; font-size: 12px; }
+.arena-difficulty > button[data-state="on"] { background: var(--arena-cyan); color: var(--primary-foreground); }
+.arena-card-available { outline: 2px solid var(--arena-green); box-shadow: var(--arena-zone-glow); }
+.arena-card-tribute { border-color: var(--gold); box-shadow: var(--glow-gold); }
+.arena-card-strike { animation: card-strike .8s ease-out both; }
+.arena-card-hit { animation: card-hit 1s ease-out both; }
+.arena-destroyed-ghost { pointer-events: none; animation: card-shatter 1.5s ease-out both; }
+.arena-destroyed-ghost .arena-card { pointer-events: none; }
+.arena-combat-hologram { width: 110px; height: 160px; border: 2px solid var(--arena-cyan); background: var(--arena-surface); box-shadow: var(--arena-glow); opacity: .9; animation: combat-hologram 1.6s ease-out both; pointer-events: none; }
+.arena-combat-hologram img { width: 100%; height: 100%; object-fit: fill; filter: saturate(.5); }
+.arena-combat-hologram span { display: grid; place-items: center; height: 100%; font-size: 13px; text-align: center; color: var(--arena-cyan); }
+.training-select { text-align: center; padding: 40px 16px; border-block: 1px solid var(--border); }
+@keyframes damage-float { 0% { opacity: 0; transform: translateY(12px); } 15%,65% { opacity: 1; } 100% { opacity: 0; transform: translateY(-22px); } }
+@keyframes damage-screen { 0% { opacity: 0; } 10%,60% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes phase-reveal { 0%,100% { opacity: 0; transform: scale(.94); } 18%,70% { opacity: 1; transform: scale(1); } }
+@keyframes result-reveal { from { opacity: 0; transform: scale(.8); } to { opacity: 1; transform: scale(1); } }
+@keyframes summon-ready { 50% { box-shadow: var(--glow-gold), inset 0 0 12px var(--foreground); } }
+@keyframes card-strike { 30% { transform: translateY(-28px) scale(1.1); } 100% { transform: none; } }
+@keyframes card-hit { 20%,60% { filter: brightness(2); translate: -6px 0; } 40% { translate: 6px 0; } 100% { filter: none; translate: 0 0; } }
+@keyframes card-shatter { 10% { filter: brightness(2); } 50% { opacity: .7; transform: scale(1.15) rotate(8deg); } 100% { opacity: 0; transform: scale(.5) translateY(35px); } }
+@keyframes combat-hologram { 0% { opacity: 0; transform: translateY(30px) scale(.5); } 20%,70% { opacity: .9; transform: translateY(-10px) scale(1); } 100% { opacity: 0; transform: translateY(-35px) scale(.7); } }
+@media (max-width: 640px) {
+  .duel-result-title { font-size: 46px; } .duel-result-trophy { width: 60px; height: 60px; }
+  .duel-result-actions { flex-direction: column; width: min(100%, 300px); }
+  .arena-phase-announcement strong { font-size: 32px; }
+  .arena-damage-number strong { font-size: 56px; }
+  .damage-own { left: 8%; } .damage-enemy { right: 8%; }
+  .arena-damage-number span { font-size: 11px; }
+  .arena-next-phase { min-height: 60px; font-size: 20px; }
+  .arena-selection-prompt { font-size: 14px; }
+  .arena-hud-damage { font-size: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .arena-hud-damage, .arena-damage-screen, .arena-phase-announcement, .duel-result-title, .arena-summon-ready, .arena-card-strike, .arena-card-hit, .arena-destroyed-ghost, .arena-combat-hologram { animation: none; }
+}

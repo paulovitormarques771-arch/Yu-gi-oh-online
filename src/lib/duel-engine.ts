@@ -19,7 +19,7 @@ export type AttackContext = { owner: PlayerId; attackerUid: string; targetUid?: 
 export type PendingDecision =
   | { kind: "response"; actor: PlayerId; event: "attack" | "summon"; sourcePlayer: PlayerId; attack?: AttackContext; summonedUid?: string }
   | { kind: "effect"; actor: PlayerId; sourceUid: string; sourceCard: CardData; sourceZone: "hand" | "spell" | "monster"; choices: EffectChoice[]; afterAttack?: AttackContext };
-export interface DuelState { players: [PlayerState, PlayerState]; turn: number; active: PlayerId; phase: Phase; winner: PlayerId | null; log: string[]; pending?: PendingDecision | null; nextUid?: number }
+export interface DuelState { players: [PlayerState, PlayerState]; turn: number; active: PlayerId; phase: Phase; winner: PlayerId | null; log: string[]; pending?: PendingDecision | null; nextUid?: number; lastBattle?: AttackContext & { sequence: number } }
 type Move =
   | { type: "draw" } | { type: "nextPhase" }
   | { type: "summon"; handUid: string; tributes?: string[]; set?: boolean }
@@ -207,13 +207,14 @@ function resolveBattle(s: DuelState, attack: AttackContext) {
   if (s.winner !== null) return;
   const owner = attack.owner, enemy = other(owner); const me = s.players[owner], opp = s.players[enemy];
   const ai = me.monsters.findIndex((m) => m?.uid === attack.attackerUid), a = me.monsters[ai]; if (!a) return;
-  if (!attack.targetUid) { opp.lp -= monsterAtk(s, owner, a); s.log.push(`${a.card.name} atacou diretamente: ${monsterAtk(s, owner, a)} de dano.`); checkWin(s); return; }
+  if (!attack.targetUid) { s.lastBattle = { ...attack, sequence: (s.lastBattle?.sequence ?? 0) + 1 }; opp.lp -= monsterAtk(s, owner, a); s.log.push(`${a.card.name} atacou diretamente: ${monsterAtk(s, owner, a)} de dano.`); checkWin(s); return; }
   const ti = opp.monsters.findIndex((m) => m?.uid === attack.targetUid), t = opp.monsters[ti]; if (!t) return;
   if (t.faceDown) {
     t.faceDown = false;
     if (effectFor(t.card)?.timing === "flip") { startEffect(s, enemy, t.card, t.uid, "monster", attack); return; }
   }
   const A = monsterAtk(s, owner, a), D = t.position === "atk" ? monsterAtk(s, enemy, t) : monsterDef(s, enemy, t);
+  s.lastBattle = { ...attack, sequence: (s.lastBattle?.sequence ?? 0) + 1 };
   if (t.position === "atk") {
     if (A > D) { opp.lp -= A - D; destroyMonster(s, enemy, ti); }
     else if (A < D) { me.lp -= D - A; destroyMonster(s, owner, ai); }
