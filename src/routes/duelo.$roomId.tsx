@@ -24,7 +24,7 @@ import { combatEvent, type CombatEvent } from "@/lib/arena-events";
 import { DIFFICULTY_LABELS, emptyPlaystyle, isDifficulty, observePlaystyle, readPlaystyle, TRAINING_PROFILE_KEY, trainingDeck, type AIDifficulty } from "@/lib/duel-training";
 
 export const Route = createFileRoute("/duelo/$roomId")({
-  validateSearch: (search: Record<string, unknown>): { difficulty?: AIDifficulty } => isDifficulty(search.difficulty) ? { difficulty: search.difficulty } : {},
+  validateSearch: (search: Record<string, unknown>): { difficulty?: AIDifficulty } => isDifficulty(search['difficulty']) ? { difficulty: search['difficulty'] } : {},
   head: () => ({
     meta: [
       { title: "Arena de Duelo — Duel Arena" },

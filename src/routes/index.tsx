@@ -10,6 +10,7 @@ import { ArenaPreview } from "@/components/arena/ArenaPreview";
 import yugiKaiba from "@/assets/yugi-vs-kaiba.jpg.asset.json";
 import bakuraYugi from "@/assets/bakura-vs-yugi.png.asset.json";
 import duelTable from "@/assets/duel-table.jpg.asset.json";
+import landingCover from "@/assets/landing-bg.jpg.asset.json";
 
 const SHOWCASE = [
   { src: yugiKaiba.url, title: "Yugi vs Kaiba", text: "O confronto que acendeu a arena." },
@@ -26,6 +27,8 @@ export const Route = createFileRoute("/")({
       { property: "og:description", content: "Monte seu deck, desperte seus monstros e desafie seus amigos." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:image", content: landingCover.url },
+      { name: "twitter:image", content: landingCover.url },
     ],
   }),
   component: Landing,
