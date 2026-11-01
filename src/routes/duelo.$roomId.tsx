@@ -76,7 +76,6 @@ function Arena({ online }: { online?: OnlineSeat }) {
   const previous = useRef(s);
   const eventId = useRef(0);
   const profile = useRef(emptyPlaystyle());
-  const aiTimer = useRef(0);
   useEffect(() => { try { profile.current = readPlaystyle(localStorage.getItem(TRAINING_PROFILE_KEY)); } catch { /* Optional local adaptation. */ } }, []);
   const commit = (next: DuelState) => {
     setS(next);
@@ -118,15 +117,15 @@ function Arena({ online }: { online?: OnlineSeat }) {
   useEffect(() => {
     if (!aiTurn) return;
     const timer = setTimeout(() => {
-      setS((current) => { try { return applyAction(current, aiNextAction(current)); } catch { return current; } });
+      setS((current) => { try { return applyAction(current, aiNextAction(current, difficulty, profile.current)); } catch { return current; } });
     }, 1900);
     return () => clearTimeout(timer);
-  }, [aiTurn, s]);
+  }, [aiTurn, s, difficulty]);
   useEffect(() => {
     const before = previous.current; previous.current = s;
     if (before === s) return;
     const event = combatEvent(before, s, ++eventId.current);
-    if (event) { setCombat(event); aiTimer.current = performance.now(); }
+    if (event) { setCombat(event); }
     if (before.phase !== s.phase || before.turn !== s.turn) {
       if (s.winner === null) setPhaseNotice({ label: `FASE ${PHASE_LABEL[s.phase].toUpperCase()}`, turn: s.turn, player: s.players[s.active].name });
       setAttackStep(null); setTributeMode(false);
