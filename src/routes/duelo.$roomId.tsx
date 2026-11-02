@@ -10,7 +10,7 @@ import { ArenaHud } from "@/components/arena/ArenaHud";
 import { CHARACTERS, type CardData } from "@/data/catalog";
 import { ALL_CARDS } from "@/data/cards";
 import { aiNextAction } from "@/lib/duel-ai";
-import { finishTurn, inspectableCard } from "@/lib/arena-presentation";
+import { fieldCardCommands, finishTurn, inspectableCard } from "@/lib/arena-presentation";
 import { supabase } from "@/integrations/supabase/client";
 import { OnlineRoom } from "@/components/arena/OnlineRoom";
 import { isRoomCode } from "@/lib/online-room";
@@ -19,8 +19,9 @@ import { applyAction, availableResponses, canAttack, choiceCard, createDuel, dec
 import { effectFor } from "@/lib/duel-effects";
 import { cardText } from "@/data/card-text";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { DamageAnnouncement, DuelResult, PhaseAnnouncement } from "@/components/arena/DuelAnnouncements";
-import { combatEvent, type CombatEvent } from "@/lib/arena-events";
+import { DamageAnnouncement, DuelOpening, DuelResult, PhaseAnnouncement } from "@/components/arena/DuelAnnouncements";
+import { combatEvent, rareSummonEvent, type CombatEvent, type RareSummonEvent } from "@/lib/arena-events";
+import { DuelSetup, type DuelSelection } from "@/components/arena/DuelSetup";
 import { DIFFICULTY_LABELS, emptyPlaystyle, isDifficulty, observePlaystyle, readPlaystyle, TRAINING_PROFILE_KEY, trainingDeck, type AIDifficulty } from "@/lib/duel-training";
 
 export const Route = createFileRoute("/duelo/$roomId")({
@@ -41,9 +42,9 @@ export const Route = createFileRoute("/duelo/$roomId")({
 const Field = lazy(() => import("@/components/arena/Battlefield3D").then((m) => ({ default: m.Battlefield3D })));
 const PHASE_LABEL = { draw: "Compra", main1: "Principal 1", battle: "Batalha", main2: "Principal 2", end: "Final" } as const;
 
-function newDuel(vsAI = false, names?: [string, string], difficulty: AIDifficulty = "normal") {
+function newDuel(vsAI = false, names?: [string, string], difficulty: AIDifficulty = "normal", chosen?: DuelSelection) {
   const seed = Date.now() % 100000;
-  return createDuel(names ?? (vsAI ? ["Você", `IA · ${DIFFICULTY_LABELS[difficulty]}`] : ["Jogador 1", "Jogador 2"]), [quickDeck(ALL_CARDS, seed), vsAI ? trainingDeck(ALL_CARDS, seed + 99, difficulty) : quickDeck(ALL_CARDS, seed + 99)], seed);
+  return createDuel(names ?? (vsAI ? ["Você", `IA · ${DIFFICULTY_LABELS[difficulty]}`] : ["Jogador 1", "Jogador 2"]), [chosen?.deck ?? quickDeck(ALL_CARDS, seed), vsAI ? trainingDeck(ALL_CARDS, seed + 99, difficulty) : chosen?.opponentDeck ?? quickDeck(ALL_CARDS, seed + 99)], seed);
 }
 
 function Duelo() {
@@ -55,20 +56,25 @@ function Duelo() {
 
 function ArenaEntry() {
   const { roomId } = Route.useParams();
+  const search = Route.useSearch();
+  const [selection, setSelection] = useState<DuelSelection | null>(null);
   if (isRoomCode(roomId)) return <OnlineRoom roomId={roomId} createState={createOnlineDuel} render={(online) => <Arena online={online} />} />;
-  return <Arena />;
+  if (!selection) return <DuelSetup vsAI={roomId === "treino"} local={roomId !== "treino"} initialDifficulty={search.difficulty} onStart={setSelection} />;
+  return <Arena selection={selection} onPrepare={() => setSelection(null)} />;
 }
 
-const createOnlineDuel = (names: [string, string]) => newDuel(false, names);
+const createOnlineDuel = (names: [string, string], decks: [CardData[], CardData[]]) => createDuel(names, decks);
 
 export interface OnlineSeat { roomId: string; seat: PlayerId; initial: DuelState; names: [string, string] }
 
-function Arena({ online }: { online?: OnlineSeat }) {
+function Arena({ online, selection, onPrepare }: { online?: OnlineSeat; selection?: DuelSelection; onPrepare?: () => void }) {
   const { roomId } = Route.useParams();
   const vsAI = roomId === "treino";
   const search = Route.useSearch();
-  const [difficulty, setDifficulty] = useState<AIDifficulty>(search.difficulty ?? "normal");
-  const [s, setS] = useState<DuelState>(() => online?.initial ?? newDuel(vsAI, undefined, difficulty));
+  const [difficulty, setDifficulty] = useState<AIDifficulty>(selection?.difficulty ?? search.difficulty ?? "normal");
+  const [s, setS] = useState<DuelState>(() => online?.initial ?? newDuel(vsAI, undefined, difficulty, selection));
+  const [opening, setOpening] = useState(() => s.turn === 1 && s.players.every((p) => !p.monsters.some(Boolean) && p.hand.length === 5));
+  const [summonEvent, setSummonEvent] = useState<RareSummonEvent | null>(null);
   const [attackStep, setAttackStep] = useState<"attacker" | "target" | null>(null);
   const [tributeMode, setTributeMode] = useState(false);
   const [combat, setCombat] = useState<CombatEvent | null>(null);
@@ -101,7 +107,7 @@ function Arena({ online }: { online?: OnlineSeat }) {
   const me = s.players[view];
   const opponent = s.players[opponentId];
   const aiTurn = vsAI && decisionPlayer(s) === 1 && s.winner === null;
-  const playable = !aiTurn && s.winner === null && decisionPlayer(s) === view;
+  const playable = !opening && !aiTurn && s.winner === null && decisionPlayer(s) === view;
   const main = s.phase === "main1" || s.phase === "main2";
   const selHand = me.hand.find((h) => h.uid === sel);
   const selMonster = me.monsters.find((m) => m?.uid === sel);
@@ -115,17 +121,20 @@ function Arena({ online }: { online?: OnlineSeat }) {
   const selectedCard = selHand?.card ?? selMonster?.card ?? selSpell?.card;
 
   useEffect(() => {
-    if (!aiTurn) return;
+    if (!aiTurn || opening) return;
     const timer = setTimeout(() => {
       setS((current) => { try { return applyAction(current, aiNextAction(current, difficulty, profile.current)); } catch { return current; } });
     }, 1900);
     return () => clearTimeout(timer);
-  }, [aiTurn, s, difficulty]);
+  }, [aiTurn, s, difficulty, opening]);
+  useEffect(() => { if (!opening) return; const timer = setTimeout(() => setOpening(false), 2300); return () => clearTimeout(timer); }, [opening]);
   useEffect(() => {
     const before = previous.current; previous.current = s;
     if (before === s) return;
     const event = combatEvent(before, s, ++eventId.current);
     if (event) { setCombat(event); }
+    const summoned = rareSummonEvent(before, s, eventId.current);
+    if (summoned) setSummonEvent(summoned);
     if (before.phase !== s.phase || before.turn !== s.turn) {
       if (s.winner === null) setPhaseNotice({ label: `FASE ${PHASE_LABEL[s.phase].toUpperCase()}`, turn: s.turn, player: s.players[s.active].name });
       setAttackStep(null); setTributeMode(false);
@@ -136,6 +145,7 @@ function Arena({ online }: { online?: OnlineSeat }) {
     const timer = setTimeout(() => setCombat(null), 1600);
     return () => clearTimeout(timer);
   }, [combat]);
+  useEffect(() => { if (!summonEvent) return; const timer = setTimeout(() => setSummonEvent(null), 1800); return () => clearTimeout(timer); }, [summonEvent]);
   useEffect(() => {
     if (!phaseNotice) return;
     const timer = setTimeout(() => setPhaseNotice(null), 1450);
@@ -172,7 +182,9 @@ function Arena({ online }: { online?: OnlineSeat }) {
   const attack = () => { if (selMonster && attackReady) act({ type: "attack", attackerUid: selMonster.uid, ...(target ? { targetUid: target } : {}) }); };
   const summon = (defense = false) => { if (selHand && canSummon) act({ type: "summon", handUid: selHand.uid, tributes, set: defense }); };
   const replay = (level = difficulty) => {
-    setDifficulty(level); commit(newDuel(vsAI, online?.names, level)); setSel(null); setZoom(null); setTarget(null); setTributes([]); setAttackStep(null); setTributeMode(false); setCombat(null); setPhaseNotice(null);
+    if (online) { if (online.seat === 0) void supabase.from("duel_rooms").update({ state: { kind: "setup", decks: [null, null] } as unknown as Json, status: "ready" }).eq("id", online.roomId).then(({ error }) => { if (error) toast.error("Não foi possível preparar a revanche."); }); return; }
+    if (onPrepare) { onPrepare(); return; }
+    setDifficulty(level); commit(newDuel(vsAI, online?.names, level, selection)); setOpening(true); setSel(null); setZoom(null); setTarget(null); setTributes([]); setAttackStep(null); setTributeMode(false); setCombat(null); setPhaseNotice(null);
   };
   const beginAttack = () => { setZoom(null); setTributeMode(false); setTributes([]); setSel(null); setTarget(null); setAttackStep("attacker"); };
   const activate = () => { if (!activateReady) return; if (selHand) act({ type: "activateSpell", handUid: selHand.uid }); else if (selSpell) act({ type: "activateField", uid: selSpell.uid }); };
@@ -225,7 +237,13 @@ function Arena({ online }: { online?: OnlineSeat }) {
           <div className="arena-opponent-hand" aria-label={`Mão adversária: ${opponent.hand.length} cartas ocultas`}>
             {opponent.hand.map((h) => <ArenaCard key={h.uid} card={inspectableCard(h.card, opponentId, view, "hand")} hidden onClick={() => toast("Carta oculta", { description: "A mão adversária permanece oculta." })} />)}
           </div>
-          <Suspense fallback={<div className="battlefield-scene" />}><Field me={me} opponent={opponent} selected={sel} tributes={tributes} target={target} combat={combat} viewer={view} attackers={attackStep === "attacker" ? attackers : []} choosingTributes={tributeMode} canDraw={playable && s.phase === "draw"} onDraw={() => act({ type: "draw" })}
+          <Suspense fallback={<div className="battlefield-scene" />}><Field me={me} opponent={opponent} selected={sel} tributes={tributes} target={target} combat={combat} summon={summonEvent} viewer={view} attackers={attackStep === "attacker" ? attackers : []} choosingTributes={tributeMode} canDraw={playable && s.phase === "draw"} onDraw={() => act({ type: "draw" })}
+            cardMenu={(uid, enemy) => {
+              const commands = fieldCardCommands(s, enemy ? opponentId : view, view, uid);
+              return { attack: playable && commands.attack, toAttack: playable && commands.toAttack, toDefense: playable && commands.toDefense,
+                onAttack: () => { if (!playable || !commands.attack) return; setZoom(null); setTributeMode(false); setTributes([]); setSel(uid); setTarget(null); setAttackStep("target"); },
+                onPosition: (position) => { if (position === "atk" ? commands.toAttack : commands.toDefense) act({ type: "changePosition", uid }); } };
+            }}
             onOwnCard={(uid, card) => {
               if (attackStep) { if (!attackers.includes(uid)) { toast.error("Este monstro não pode atacar agora."); return; } setSel(uid); setTarget(null); setAttackStep("target"); setZoom(null); return; }
               if (tributeMode && need > 0) { toggleTribute(uid); return; }
@@ -265,7 +283,7 @@ function Arena({ online }: { online?: OnlineSeat }) {
               <Button className="arena-action" disabled={!activateReady} onClick={activate}><Zap />Ativar</Button>
               <Button className="arena-action" disabled={attackStep === "target" ? !attackReady : !attackers.length} onClick={attackStep === "target" ? attack : beginAttack}><Swords />{attackStep === "target" ? target ? "Confirmar ataque" : "Atacar LP diretamente" : "Atacar"}</Button>
               <Button className="arena-action" disabled={!canSet} onClick={() => { if (!selHand) return; if (selHand.card.kind === "monster") summon(true); else act({ type: "setSpell", handUid: selHand.uid }); }}><Shield />Baixar carta</Button>
-              {selMonster && <Button className="arena-action" disabled={!playable || !!s.pending || !main || selMonster.summonedTurn === s.turn} onClick={() => act({ type: "changePosition", uid: selMonster.uid })}><RotateCcw />Mudar posição</Button>}
+              {selMonster && <Button className="arena-action" disabled={!playable || !(fieldCardCommands(s, view, view, selMonster.uid).toAttack || fieldCardCommands(s, view, view, selMonster.uid).toDefense)} onClick={() => act({ type: "changePosition", uid: selMonster.uid })}><RotateCcw />Mudar posição</Button>}
             </div>
             <Button className="arena-next-phase" disabled={!playable || !!s.pending || s.phase === "draw"} onClick={() => act({ type: "nextPhase" })}><ChevronRight />PRÓXIMA FASE</Button>
             <div className="arena-minor-actions"><Button variant="ghost" size="icon" aria-label="Desistir do duelo" title="Desistir do duelo" disabled={!playable} onClick={() => { if (window.confirm("Desistir deste duelo?")) act({ type: "surrender" }); }}><Flag /></Button></div>
@@ -279,8 +297,9 @@ function Arena({ online }: { online?: OnlineSeat }) {
       <footer className="arena-footer"><span>● {vsAI ? "TREINO CONTRA IA" : online ? "DUELO ONLINE" : "DUELO LOCAL"}</span><span>{aiTurn ? "TURNO DO OPONENTE" : `TURNO DE ${s.players[s.active].name.toUpperCase()}`}</span><span>DUEL ARENA · PROJETO DE FÃS</span></footer>
     </main>
     <CardZoom card={zoom?.card ?? null} owner={zoom?.owner} onClose={() => setZoom(null)} actions={modalActions} />
+    {opening && <DuelOpening />}
     {s.winner === null && phaseNotice && <PhaseAnnouncement key={`${phaseNotice.turn}-${phaseNotice.label}`} {...phaseNotice} />}
     <DamageAnnouncement event={combat} view={view} />
-    <DuelResult winner={s.winner === null ? null : s.winner === (online ? online.seat : 0)} onReplay={() => replay()} />
+    <DuelResult winner={s.winner === null ? null : s.winner === (online ? online.seat : 0)} canReplay={!online || online.seat === 0} onReplay={() => replay()} />
   </div>;
 }
