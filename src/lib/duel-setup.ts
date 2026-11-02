@@ -9,7 +9,7 @@ export type RoomState = DuelState | RoomPreparation;
 export const isPreparation = (state: RoomState | null): state is RoomPreparation => !!state && "kind" in state && state.kind === "setup";
 
 export function deckFromIds(ids: number[]): CardData[] {
-  if (ids.length < 5) throw new Error("Escolha um deck com pelo menos 5 cartas.");
+  if (!ids.length) throw new Error("Escolha um deck com pelo menos 1 carta.");
   if (ids.length > MAX_DECK_SIZE) throw new Error("O deck ultrapassa 45 cartas.");
   const counts = new Map<number, number>();
   return ids.map((id) => {

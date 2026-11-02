@@ -75,7 +75,7 @@ function Arena({ online, selection, onPrepare }: { online?: OnlineSeat; selectio
   const search = Route.useSearch();
   const [difficulty, setDifficulty] = useState<AIDifficulty>(selection?.difficulty ?? search.difficulty ?? "normal");
   const [s, setS] = useState<DuelState>(() => online?.initial ?? newDuel(vsAI, undefined, difficulty, selection));
-  const [opening, setOpening] = useState(() => s.turn === 1 && s.players.every((p) => !p.monsters.some(Boolean) && p.hand.length === 5));
+  const [opening, setOpening] = useState(() => s.turn === 1 && s.log.length === 1 && s.players.every((p) => !p.monsters.some(Boolean) && !p.spells.some(Boolean)));
   const [summonEvent, setSummonEvent] = useState<RareSummonEvent | null>(null);
   const [attackStep, setAttackStep] = useState<"attacker" | "target" | null>(null);
   const [tributeMode, setTributeMode] = useState(false);

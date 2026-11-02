@@ -19,6 +19,7 @@ describe("deck selection before a duel", () => {
     expect(isPreparation(both)).toBe(true);
   });
   it("rejects decks over 45 cards", () => expect(() => deckFromIds(ALL_CARDS.slice(0, 46).map((card) => card.id))).toThrow("45"));
+  it("preserves the existing ability to save and select a nonempty short deck", () => expect(deckFromIds(ids.slice(0, 1))).toHaveLength(1));
   it("rejects over 3 copies even when repeated in separate entries", () => expect(() => deckFromIds([ids[0] ?? 0, ids[0] ?? 0, ids[0] ?? 0, ids[0] ?? 0, ids[1] ?? 0])).toThrow("3 cópias"));
   it("identifies iconic rare cards without treating all monsters as rare", () => {
     const dragon = ALL_CARDS.find((card) => card.id === 89631139);
