@@ -3,7 +3,7 @@ import type { AttackContext, DuelState, PlayerId } from "@/lib/duel-engine";
 import { rareCard } from "@/lib/duel-setup";
 
 export type CombatEvent = {
-  id: number; owner: PlayerId; attackerUid?: string; targetUid?: string; battleResolved: boolean;
+  id: number; owner: PlayerId; attackerUid?: string; targetUid?: string; targetIndex?: number; battleResolved: boolean;
   attackerCard?: CardData; targetCard?: CardData; damages: { owner: PlayerId; amount: number }[];
   destroyed: { uid: string; owner: PlayerId; card: CardData; index: number }[];
 };
@@ -37,7 +37,9 @@ export function combatEvent(before: DuelState, after: DuelState, id: number): Co
   const enemy: PlayerId = owner === 0 ? 1 : 0;
   const a = before.players[owner].monsters.find((m) => m?.uid === attack?.attackerUid);
   const hit = attack?.targetUid ? before.players[enemy].monsters.find((m) => m?.uid === attack?.targetUid) : undefined;
+  const targetIndex = attack?.targetUid ? before.players[enemy].monsters.findIndex((m) => m?.uid === attack?.targetUid) : -1;
   return { id, owner, battleResolved: !!after.lastBattle && after.lastBattle.sequence !== before.lastBattle?.sequence, ...(attack ? { attackerUid: attack.attackerUid, targetUid: attack.targetUid } : {}),
+    ...(targetIndex >= 0 ? { targetIndex } : {}),
     ...(a && !a.faceDown ? { attackerCard: a.card } : {}), ...(hit && !hit.faceDown ? { targetCard: hit.card } : {}), damages, destroyed };
 }
 

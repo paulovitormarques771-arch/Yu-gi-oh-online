@@ -186,7 +186,7 @@ function Arena({ online, selection, onPrepare }: { online?: OnlineSeat; selectio
   const replay = (level = difficulty) => {
     if (online) { if (online.seat === 0) void supabase.from("duel_rooms").update({ state: { kind: "setup", decks: [null, null] } as unknown as Json, status: "ready" }).eq("id", online.roomId).then(({ error }) => { if (error) toast.error("Não foi possível preparar a revanche."); }); return; }
     if (onPrepare) { onPrepare(level); return; }
-    setDifficulty(level); commit(newDuel(vsAI, online?.names, level, selection)); setOpening(true); setSel(null); setZoom(null); setTarget(null); setTributes([]); setAttackStep(null); setTributeMode(false); setCombat(null); setPhaseNotice(null);
+    setDifficulty(level); commit(newDuel(vsAI, undefined, level, selection)); setOpening(true); setSel(null); setZoom(null); setTarget(null); setTributes([]); setAttackStep(null); setTributeMode(false); setCombat(null); setPhaseNotice(null);
   };
   const beginAttack = () => { setZoom(null); setTributeMode(false); setTributes([]); setSel(null); setTarget(null); setAttackStep("attacker"); };
   const activate = () => { if (!activateReady) return; if (selHand) act({ type: "activateSpell", handUid: selHand.uid }); else if (selSpell) act({ type: "activateField", uid: selSpell.uid }); };
