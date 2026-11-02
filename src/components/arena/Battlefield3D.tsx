@@ -6,7 +6,10 @@ import { ArenaCard, CardBack } from "@/components/arena/ArenaCard";
 import type { CardData } from "@/data/catalog";
 import type { PlayerState } from "@/lib/duel-engine";
 import { cn } from "@/lib/utils";
-import type { CombatEvent } from "@/lib/arena-events";
+import type { CombatEvent, RareSummonEvent } from "@/lib/arena-events";
+import { FieldCardMenu, type FieldMenuActions } from "@/components/arena/FieldCardMenu";
+import { RareEnergy3D } from "@/components/arena/RareEnergy3D";
+import { rareCard } from "@/lib/duel-setup";
 
 export type BattlefieldProps = {
   me: PlayerState; opponent: PlayerState; selected?: string | null; tributes?: string[]; target?: string | null;
@@ -16,6 +19,8 @@ export type BattlefieldProps = {
   onInspect?: (card: CardData, enemy: boolean) => void;
   onDraw?: () => void; canDraw?: boolean; preview?: boolean;
   combat?: CombatEvent | null; viewer?: 0 | 1; attackers?: string[]; choosingTributes?: boolean;
+  summon?: RareSummonEvent | null;
+  cardMenu?: (uid: string, enemy: boolean) => FieldMenuActions;
 };
 
 function useArenaColors() {
@@ -107,10 +112,12 @@ function panels(p: BattlefieldProps): Panel[] {
     const hidden = row.enemy && zone.faceDown;
     const shown = hidden ? null : zone.card;
     const selected = p.selected === zone.uid || p.tributes?.includes(zone.uid) || p.target === zone.uid;
-    result.push({ id: `zone-${ri}-${i}`, x: (i - 2) * 1.17, y: .06, z: row.z,
-      content: <ArenaCard card={shown} hidden={hidden} defensive={"position" in zone && zone.position === "def"} faceDown={!row.enemy && zone.faceDown} selected={selected}
+    const card = <ArenaCard data-field-uid={zone.uid} data-field-side={row.enemy ? "enemy" : "own"} card={shown} hidden={hidden} defensive={"position" in zone && zone.position === "def"} faceDown={!row.enemy && zone.faceDown} selected={selected}
         className={cn(p.combat?.attackerUid === zone.uid && "arena-card-strike", p.combat?.targetUid === zone.uid && "arena-card-hit", !row.enemy && !row.spell && p.attackers?.includes(zone.uid) && "arena-card-available", !row.enemy && !row.spell && p.choosingTributes && "arena-card-tribute")}
-        onClick={() => row.enemy ? (row.spell ? shown && p.onInspect?.(shown, true) : p.onOpponentCard?.(zone.uid, shown)) : row.spell ? (p.onOwnSpell ? p.onOwnSpell(zone.uid, zone.card) : p.onInspect?.(zone.card, false)) : p.onOwnCard?.(zone.uid, zone.card)} /> });
+        onClick={() => row.enemy ? (row.spell ? shown && p.onInspect?.(shown, true) : p.onOpponentCard?.(zone.uid, shown)) : row.spell ? (p.onOwnSpell ? p.onOwnSpell(zone.uid, zone.card) : p.onInspect?.(zone.card, false)) : p.onOwnCard?.(zone.uid, zone.card)} />;
+    result.push({ id: `zone-${ri}-${i}`, x: (i - 2) * 1.17, y: .06, z: row.z,
+      content: !row.spell && p.cardMenu ? <FieldCardMenu actions={p.cardMenu(zone.uid, row.enemy)}>{card}</FieldCardMenu> : card });
+    if (!row.spell && p.combat?.battleResolved && p.combat.targetUid === zone.uid) result.push({ id: `slash-${p.combat.id}-${zone.uid}`, x: (i - 2) * 1.17, y: .2, z: row.z, content: <div className="arena-sword-cut" aria-hidden="true" /> });
   }));
   [{x: -3.7, z: -2.5, player: p.opponent, enemy: true}, {x: 3.7, z: 2.5, player: p.me, enemy: false}].forEach((deck) => {
     result.push({ id: `deck-${deck.enemy}`, x: deck.x, y: .213, z: deck.z, content: <div>
@@ -127,9 +134,9 @@ function panels(p: BattlefieldProps): Panel[] {
     const event = p.combat;
     const own = event.owner === (p.viewer ?? 0);
     if (event.attackerCard) result.push({ id: `hologram-${event.id}`, x: 0, y: 1.25, z: own ? .6 : -.6,
-      content: <div className="arena-combat-hologram" aria-hidden="true">{event.attackerCard.imageUrl ? <img src={event.attackerCard.imageUrl} alt="" /> : <span>{event.attackerCard.name}</span>}</div> });
+      content: <div className={cn("arena-combat-hologram", rareCard(event.attackerCard) && "arena-rare-attack")} aria-hidden="true">{event.attackerCard.imageUrl ? <img src={event.attackerCard.imageUrl} alt="" /> : <span>{event.attackerCard.name}</span>}</div> });
     for (const ghost of event.destroyed) result.push({ id: `hit-${event.id}-${ghost.uid}`, x: (ghost.index - 2) * 1.17, y: .08, z: ghost.owner === (p.viewer ?? 0) ? 1.02 : -1.02,
-      content: <div className="arena-destroyed-ghost" aria-hidden="true"><ArenaCard card={ghost.card} /></div> });
+      content: <div className="arena-destroyed-ghost" aria-hidden="true"><ArenaCard card={ghost.card} />{event.battleResolved && event.targetUid === ghost.uid && <div className="arena-sword-cut" />}</div> });
   }
   return result;
 }
@@ -223,6 +230,12 @@ function Scene({ onReady, reduced, panelList, panelRefs, ...p }: BattlefieldProp
     <Frame x={3.7} z={-1.8} color={colors.magic} />
     <Frame x={-3.7} z={1.8} color={colors.magic} />
     {panelList.map((panel) => <ProjectPanel key={panel.id} panel={panel} refs={panelRefs} />)}
+    {[{ player: p.me, owner: p.viewer ?? 0, z: 1.02 }, { player: p.opponent, owner: (p.viewer ?? 0) === 0 ? 1 : 0, z: -1.02 }].flatMap(({ player, owner, z }) => player.monsters.flatMap((monster, index) => {
+      if (!monster || monster.faceDown || !rareCard(monster.card)) return [];
+      const burst = p.summon?.monsters.some((entry) => entry.uid === monster.uid && entry.owner === owner);
+      return [<RareEnergy3D key={`${monster.uid}-${burst ? p.summon?.id : "aura"}`} x={(index - 2) * 1.17} z={z} card={monster.card} colors={colors} reduced={reduced} burst={burst} />];
+    }))}
+    {p.combat?.battleResolved && p.combat.attackerCard && rareCard(p.combat.attackerCard) && <RareEnergy3D key={`rare-attack-${p.combat.id}`} x={0} z={p.combat.owner === (p.viewer ?? 0) ? .35 : -.35} card={p.combat.attackerCard} colors={colors} reduced={reduced} attack />}
     <Energy reduced={reduced} onReady={onReady} />
     {p.combat && <CombatPulse key={p.combat.id} event={p.combat} viewer={p.viewer ?? 0} reduced={reduced} />}
   </>;

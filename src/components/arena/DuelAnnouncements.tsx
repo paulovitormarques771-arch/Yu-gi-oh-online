@@ -12,15 +12,20 @@ export function DamageAnnouncement({ event, view }: { event: CombatEvent | null;
     {event.damages.map((damage) => <div key={damage.owner} className={`arena-damage-number ${damage.owner === view ? "damage-own" : "damage-enemy"}`}>
       <span>{damage.owner === view ? "SEUS LP" : "LP DO OPONENTE"}</span>
       <strong>−{damage.amount}</strong><small>DANO</small>
+      {event.battleResolved && <div className="arena-sword-cut arena-lp-cut" aria-hidden="true" />}
     </div>)}
   </div>;
+}
+
+export function DuelOpening() {
+  return <div className="arena-duel-opening" role="status" aria-live="assertive"><span>DUEL ARENA</span><strong>É HORA DO DUELO!</strong><div className="arena-opening-line" aria-hidden="true" /></div>;
 }
 
 export function PhaseAnnouncement({ label, turn, player }: { label: string; turn: number; player: string }) {
   return <div className="arena-phase-announcement" role="status" aria-live="polite"><div><small>TURNO {turn} · {player}</small><strong>{label}</strong></div></div>;
 }
 
-export function DuelResult({ winner, onReplay }: { winner: boolean | null; onReplay: () => void }) {
+export function DuelResult({ winner, onReplay, canReplay = true }: { winner: boolean | null; onReplay: () => void; canReplay?: boolean }) {
   return <Dialog.Root open={winner !== null}>
     <Dialog.Portal>
       <Dialog.Overlay className="duel-result-overlay" />
@@ -30,7 +35,7 @@ export function DuelResult({ winner, onReplay }: { winner: boolean | null; onRep
         <span className="duel-result-eyebrow">DUELO ENCERRADO</span>
         <Dialog.Title className="duel-result-title">{winner ? "VOCÊ VENCEU!" : "VOCÊ PERDEU!"}</Dialog.Title>
         <div className="duel-result-actions">
-          <Button size="lg" className="duel-replay-button" onClick={onReplay}><RotateCcw />Jogar novamente</Button>
+          <Button size="lg" className="duel-replay-button" disabled={!canReplay} onClick={onReplay}><RotateCcw />{canReplay ? "Jogar novamente" : "Aguardando o anfitrião"}</Button>
           <Button asChild size="lg" variant="outline"><Link to="/jogar"><Home />Voltar ao menu</Link></Button>
         </div>
       </Dialog.Content>
