@@ -49,8 +49,8 @@ export function RareEnergy3D({ x, z, colors, card, reduced, burst = false, attac
   });
   return <group ref={group} position={[x, .08, z]}>
     <group ref={ring}>
-      <mesh rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[.57, .61, 48]} /><meshBasicMaterial color={colors.gold} transparent opacity={.65} toneMapped={false} /></mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[.68, .69, 6]} /><meshBasicMaterial color={colors.magic} transparent opacity={.6} toneMapped={false} /></mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[.71, .75, 48]} /><meshBasicMaterial color={colors.gold} transparent opacity={.7} toneMapped={false} /></mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[.83, .85, 6]} /><meshBasicMaterial color={colors.magic} transparent opacity={.7} toneMapped={false} /></mesh>
     </group>
     {(burst || attack) && <>
       {bolts.map((positions, i) => <line key={i}><bufferGeometry><bufferAttribute attach="attributes-position" args={[positions, 3]} /></bufferGeometry><lineBasicMaterial color={i % 2 ? colors.gold : colors.cyan} transparent opacity={reduced ? .35 : .85} toneMapped={false} /></line>)}
