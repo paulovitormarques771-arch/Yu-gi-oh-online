@@ -8,6 +8,12 @@
 - [ ] Etapa 7: animações, recursos visuais e acabamento
 
 ## Pedido atual
+- [ ] Menu de contexto no campo para ataque e posições, respeitando o motor de regras.
+- [ ] Escolher deck e dificuldade antes da partida; usar os decks escolhidos também online.
+- [ ] Anúncio inicial “É HORA DO DUELO!” em cada nova partida.
+- [ ] Brilho holográfico, raios de invocação e ataque personalizado para cartas raras visíveis.
+- [ ] Cortes de espada em ataques aos monstros e aos LP.
+- [ ] Testar preparação, ações do menu e efeitos na arena.
 - [x] Final em tela toda com vitória/derrota, jogar novamente e voltar ao menu.
 - [x] Impactos holográficos 3D, dano numérico real e animação dos LP.
 - [x] IA Fácil/Normal/Difícil estratégica e adaptação local aos hábitos de jogo.
