@@ -14,7 +14,7 @@
 - [x] Menu de contexto no campo para ataque e posições, respeitando o motor de regras.
 - [x] Escolher deck e dificuldade antes da partida; usar os decks escolhidos também online.
 - [x] Anúncio inicial “É HORA DO DUELO!” em cada nova partida.
-- [x] Brilho holográfico, raios de invocação e ataque personalizado para cartas raras visíveis.
+- [x] Raios de invocação e ataques personalizados para cartas raras visíveis; brilho anterior substituído por raios.
 - [x] Cortes de espada em ataques aos monstros e aos LP.
 - [x] Testar preparação com deck salvo, ações do menu e efeitos na arena em desktop/celular; confirmar persistência do deck online e espera pelo oponente. Início com duas contas ainda não verificado por falta de segunda sessão autorizada.
 - [x] Final em tela toda com vitória/derrota, jogar novamente e voltar ao menu.
