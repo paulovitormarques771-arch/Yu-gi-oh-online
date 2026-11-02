@@ -9,8 +9,9 @@ type EnergyColors = { cyan: string; gold: string; magic: string; foreground: str
 function MonsterHologram({ card, colors }: { card: CardData; colors: EnergyColors }) {
   const dragon = /dragon|dragão/i.test(card.race ?? "") || [89631139, 74677422, 10000020, 10000010].includes(card.id);
   const divine = card.attribute === "DIVINE";
+  const warrior = card.id === 10000000;
   const color = divine ? colors.gold : dragon ? colors.cyan : colors.magic;
-  return <group scale={divine ? 1.2 : 1}>
+  return <group scale={divine ? 1.7 : 1.5}>
     <mesh position={[0, .55, 0]}><coneGeometry args={[.22, .9, dragon ? 6 : 12]} /><meshBasicMaterial color={color} wireframe transparent opacity={.85} toneMapped={false} /></mesh>
     <mesh position={[0, 1.15, 0]} rotation={[0, 0, dragon ? -.3 : 0]}><octahedronGeometry args={[.24]} /><meshBasicMaterial color={color} wireframe toneMapped={false} /></mesh>
     {dragon ? <>
@@ -20,6 +21,9 @@ function MonsterHologram({ card, colors }: { card: CardData; colors: EnergyColor
       </group>)}
       <mesh position={[0, .28, -.45]} rotation={[1.1, 0, 0]}><coneGeometry args={[.12, 1, 5]} /><meshBasicMaterial color={color} wireframe toneMapped={false} /></mesh>
       <mesh position={[0, 1.4, 0]}><coneGeometry args={[.12, .35, 4]} /><meshBasicMaterial color={colors.gold} wireframe /></mesh>
+    </> : warrior ? <>
+      <mesh position={[0, .7, 0]}><boxGeometry args={[.62, .6, .28]} /><meshBasicMaterial color={color} wireframe toneMapped={false} /></mesh>
+      {[-1, 1].map((side) => <group key={side} position={[side * .52, .72, 0]} rotation={[0, 0, side * .3]}><mesh><boxGeometry args={[.3, .7, .3]} /><meshBasicMaterial color={color} wireframe toneMapped={false} /></mesh><mesh position={[0, -.44, 0]}><octahedronGeometry args={[.22]} /><meshBasicMaterial color={color} wireframe toneMapped={false} /></mesh></group>)}
     </> : <>
       <mesh position={[0, 1.48, 0]}><coneGeometry args={[.3, .5, 8]} /><meshBasicMaterial color={color} wireframe toneMapped={false} /></mesh>
       <mesh position={[.4, .72, 0]}><cylinderGeometry args={[.02, .02, 1.5, 6]} /><meshBasicMaterial color={colors.gold} toneMapped={false} /></mesh>
@@ -28,8 +32,8 @@ function MonsterHologram({ card, colors }: { card: CardData; colors: EnergyColor
   </group>;
 }
 
-export function RareEnergy3D({ x, z, colors, card, reduced, burst = false, attack = false }: {
-  x: number; z: number; colors: EnergyColors; card: CardData; reduced: boolean; burst?: boolean; attack?: boolean;
+export function RareEnergy3D({ x, z, colors, card, reduced, burst = false, attack = false, direction = -1 }: {
+  x: number; z: number; colors: EnergyColors; card: CardData; reduced: boolean; burst?: boolean; attack?: boolean; direction?: number;
 }) {
   const group = useRef<Group>(null);
   const ring = useRef<Group>(null);
@@ -44,7 +48,7 @@ export function RareEnergy3D({ x, z, colors, card, reduced, burst = false, attac
     if (ring.current) ring.current.rotation.y += Math.min(delta, .05) * .9;
     if (group.current) {
       group.current.position.y = .08 + Math.sin(elapsed * 3) * .025;
-      if (attack) { group.current.rotation.y = Math.sin(elapsed * 2) * .3; group.current.scale.setScalar(.85 + Math.sin(Math.min(elapsed, 1.6) / 1.6 * Math.PI) * .4); }
+      if (attack) { group.current.rotation.y = Math.sin(elapsed * 2) * .3; group.current.scale.setScalar(.85 + Math.sin(Math.min(elapsed, 1.6) / 1.6 * Math.PI) * .4); group.current.position.z = z + direction * Math.sin(Math.min(elapsed, 1.6) / 1.6 * Math.PI) * 1.2; }
     }
   });
   return <group ref={group} position={[x, .08, z]}>

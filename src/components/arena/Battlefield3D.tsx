@@ -235,9 +235,9 @@ function Scene({ onReady, reduced, panelList, panelRefs, ...p }: BattlefieldProp
       const burst = !!p.summon?.monsters.some((entry) => entry.uid === monster.uid && entry.owner === owner);
       return [<RareEnergy3D key={`${monster.uid}-${burst ? p.summon?.id : "aura"}`} x={(index - 2) * 1.17} z={z} card={monster.card} colors={colors} reduced={reduced} burst={burst} />];
     }))}
-    {p.combat?.battleResolved && p.combat.attackerCard && rareCard(p.combat.attackerCard) && <RareEnergy3D key={`rare-attack-${p.combat.id}`} x={0} z={p.combat.owner === (p.viewer ?? 0) ? .35 : -.35} card={p.combat.attackerCard} colors={colors} reduced={reduced} attack />}
+    {p.combat?.battleResolved && p.combat.attackerCard && rareCard(p.combat.attackerCard) && <RareEnergy3D key={`rare-attack-${p.combat.id}`} x={0} z={p.combat.owner === (p.viewer ?? 0) ? .35 : -.35} card={p.combat.attackerCard} colors={colors} reduced={reduced} attack direction={p.combat.owner === (p.viewer ?? 0) ? -1 : 1} />}
     <Energy reduced={reduced} onReady={onReady} />
-    {p.combat && <CombatPulse key={p.combat.id} event={p.combat} viewer={p.viewer ?? 0} reduced={reduced} />}
+    {p.combat && !(p.combat.attackerCard && rareCard(p.combat.attackerCard)) && <CombatPulse key={p.combat.id} event={p.combat} viewer={p.viewer ?? 0} reduced={reduced} />}
   </>;
 }
 
