@@ -22,6 +22,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { DamageAnnouncement, DuelOpening, DuelResult, PhaseAnnouncement } from "@/components/arena/DuelAnnouncements";
 import { combatEvent, rareSummonEvent, type CombatEvent, type RareSummonEvent } from "@/lib/arena-events";
 import { DuelSetup, type DuelSelection } from "@/components/arena/DuelSetup";
+import { isPreparation, type RoomState } from "@/lib/duel-setup";
 import { DIFFICULTY_LABELS, emptyPlaystyle, isDifficulty, observePlaystyle, readPlaystyle, TRAINING_PROFILE_KEY, trainingDeck, type AIDifficulty } from "@/lib/duel-training";
 
 export const Route = createFileRoute("/duelo/$roomId")({
@@ -58,16 +59,17 @@ function ArenaEntry() {
   const { roomId } = Route.useParams();
   const search = Route.useSearch();
   const [selection, setSelection] = useState<DuelSelection | null>(null);
+  const [preparedDifficulty, setPreparedDifficulty] = useState<AIDifficulty>(search.difficulty ?? "normal");
   if (isRoomCode(roomId)) return <OnlineRoom roomId={roomId} createState={createOnlineDuel} render={(online) => <Arena online={online} />} />;
-  if (!selection) return <DuelSetup vsAI={roomId === "treino"} local={roomId !== "treino"} initialDifficulty={search.difficulty} onStart={setSelection} />;
-  return <Arena selection={selection} onPrepare={() => setSelection(null)} />;
+  if (!selection) return <DuelSetup vsAI={roomId === "treino"} local={roomId !== "treino"} initialDifficulty={preparedDifficulty} onStart={setSelection} />;
+  return <Arena selection={selection} onPrepare={(level) => { setPreparedDifficulty(level); setSelection(null); }} />;
 }
 
 const createOnlineDuel = (names: [string, string], decks: [CardData[], CardData[]]) => createDuel(names, decks);
 
 export interface OnlineSeat { roomId: string; seat: PlayerId; initial: DuelState; names: [string, string] }
 
-function Arena({ online, selection, onPrepare }: { online?: OnlineSeat; selection?: DuelSelection; onPrepare?: () => void }) {
+function Arena({ online, selection, onPrepare }: { online?: OnlineSeat; selection?: DuelSelection; onPrepare?: (level: AIDifficulty) => void }) {
   const { roomId } = Route.useParams();
   const vsAI = roomId === "treino";
   const search = Route.useSearch();
@@ -91,8 +93,8 @@ function Arena({ online, selection, onPrepare }: { online?: OnlineSeat; selectio
     if (!online) return;
     const channel = supabase.channel(`room-${online.roomId}-${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "duel_rooms", filter: `id=eq.${online.roomId}` }, (payload) => {
-        const next = (payload.new as { state: DuelState | null }).state;
-        if (next) setS(next);
+        const next = (payload.new as { state: RoomState | null }).state;
+        if (next && !isPreparation(next)) setS(next);
       }).subscribe();
     return () => { void supabase.removeChannel(channel); };
   }, [online?.roomId]);
@@ -183,7 +185,7 @@ function Arena({ online, selection, onPrepare }: { online?: OnlineSeat; selectio
   const summon = (defense = false) => { if (selHand && canSummon) act({ type: "summon", handUid: selHand.uid, tributes, set: defense }); };
   const replay = (level = difficulty) => {
     if (online) { if (online.seat === 0) void supabase.from("duel_rooms").update({ state: { kind: "setup", decks: [null, null] } as unknown as Json, status: "ready" }).eq("id", online.roomId).then(({ error }) => { if (error) toast.error("Não foi possível preparar a revanche."); }); return; }
-    if (onPrepare) { onPrepare(); return; }
+    if (onPrepare) { onPrepare(level); return; }
     setDifficulty(level); commit(newDuel(vsAI, online?.names, level, selection)); setOpening(true); setSel(null); setZoom(null); setTarget(null); setTributes([]); setAttackStep(null); setTributeMode(false); setCombat(null); setPhaseNotice(null);
   };
   const beginAttack = () => { setZoom(null); setTributeMode(false); setTributes([]); setSel(null); setTarget(null); setAttackStep("attacker"); };
