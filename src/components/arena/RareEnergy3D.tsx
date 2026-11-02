@@ -47,14 +47,13 @@ export function RareEnergy3D({ x, z, colors, card, reduced, burst = false, attac
   const beam = useRef<Mesh>(null);
   const impact = useRef<Group>(null);
   const strike = useRef(0);
-  const elapsed = useRef(0);
+  const start = useRef(performance.now());
   const profile = rareProfile(card);
   const color = colors[profile.color];
   const dx = targetX - x, dz = targetZ - z;
   const vectors = useMemo(() => ({ from: new Vector3(), to: new Vector3(), delta: new Vector3(), up: new Vector3(0, 1, 0) }), []);
   useFrame((_, delta) => {
-    elapsed.current += Math.min(delta, .05);
-    const t = reduced ? .9 : elapsed.current;
+    const t = reduced ? .9 : (performance.now() - start.current) / 1000;
     const f = attackFrame(t);
     strike.current = f.strike;
     if (model.current) {

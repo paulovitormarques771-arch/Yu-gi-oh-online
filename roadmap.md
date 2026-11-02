@@ -8,9 +8,9 @@
 - [ ] Etapa 7: animações, recursos visuais e acabamento
 
 ## Pedido atual
-- [ ] Substituir brilho/foil por raios emitidos pelas cartas raras.
-- [ ] Holograma do monstro emergindo da carta e ataque raro personalizado até o alvo real.
-- [ ] Verificar raios, ataques a monstros/LP e privacidade em telas grandes e pequenas.
+- [x] Substituir brilho/foil por raios emitidos pelas cartas raras.
+- [x] Hologramas 3D originais emergindo da carta, com sopro, fogo, magia, raios solares ou soco conforme o monstro, até o alvo real. Novas artes específicas não geradas por falta de créditos de construção.
+- [x] Verificar raios, ataques a monstros/LP e privacidade em telas grandes/pequenas; 74 testes passaram.
 - [x] Menu de contexto no campo para ataque e posições, respeitando o motor de regras.
 - [x] Escolher deck e dificuldade antes da partida; usar os decks escolhidos também online.
 - [x] Anúncio inicial “É HORA DO DUELO!” em cada nova partida.
