@@ -10,6 +10,7 @@ import type { CombatEvent, RareSummonEvent } from "@/lib/arena-events";
 import { FieldCardMenu, type FieldMenuActions } from "@/components/arena/FieldCardMenu";
 import { RareEnergy3D } from "@/components/arena/RareEnergy3D";
 import { rareCard } from "@/lib/duel-setup";
+import { rareAttackPath, rareProfile } from "@/lib/rare-vfx";
 
 export type BattlefieldProps = {
   me: PlayerState; opponent: PlayerState; selected?: string | null; tributes?: string[]; target?: string | null;
@@ -35,7 +36,7 @@ function useArenaColors() {
       const rgba = ctx.getImageData(0, 0, 1, 1).data;
       return `rgb(${rgba[0]}, ${rgba[1]}, ${rgba[2]})`;
     };
-    return { cyan: color("--arena-cyan"), green: color("--arena-green"), gold: color("--gold"), surface: color("--arena-surface"), edge: color("--arena-edge"), ink: color("--background"), foreground: color("--foreground"), magic: color("--magic") };
+    return { cyan: color("--arena-cyan"), green: color("--arena-green"), gold: color("--gold"), surface: color("--arena-surface"), edge: color("--arena-edge"), ink: color("--background"), foreground: color("--foreground"), magic: color("--magic"), damage: color("--destructive") };
   }, []);
 }
 
@@ -133,8 +134,8 @@ function panels(p: BattlefieldProps): Panel[] {
     const event = p.combat;
     const own = event.owner === (p.viewer ?? 0);
     if (event.battleResolved && event.targetIndex !== undefined) result.push({ id: `slash-${event.id}`, x: (event.targetIndex - 2) * 1.17, y: .2, z: own ? -1.02 : 1.02, content: <div className="arena-sword-cut" aria-hidden="true" /> });
-    if (event.attackerCard) result.push({ id: `hologram-${event.id}`, x: 0, y: 1.25, z: own ? .6 : -.6,
-      content: <div className={cn("arena-combat-hologram", rareCard(event.attackerCard) && "arena-rare-attack")} aria-hidden="true">{event.attackerCard.imageUrl ? <img src={event.attackerCard.imageUrl} alt="" /> : <span>{event.attackerCard.name}</span>}</div> });
+    if (event.attackerCard && !rareCard(event.attackerCard)) result.push({ id: `hologram-${event.id}`, x: 0, y: 1.25, z: own ? .6 : -.6,
+      content: <div className="arena-combat-hologram" aria-hidden="true">{event.attackerCard.imageUrl ? <img src={event.attackerCard.imageUrl} alt="" /> : <span>{event.attackerCard.name}</span>}</div> });
     for (const ghost of event.destroyed) result.push({ id: `hit-${event.id}-${ghost.uid}`, x: (ghost.index - 2) * 1.17, y: .08, z: ghost.owner === (p.viewer ?? 0) ? 1.02 : -1.02,
       content: <div className="arena-destroyed-ghost" aria-hidden="true"><ArenaCard card={ghost.card} /></div> });
   }
@@ -192,6 +193,7 @@ function CombatPulse({ event, viewer, reduced }: { event: CombatEvent; viewer: 0
 
 function Scene({ onReady, reduced, panelList, panelRefs, ...p }: BattlefieldProps & { onReady: () => void; reduced: boolean; panelList: Panel[]; panelRefs: PanelRefs }) {
   const colors = useArenaColors();
+  const attackPath = rareAttackPath(p.combat, p.viewer ?? 0);
   const surface = useMemo(() => {
     const canvas = document.createElement("canvas"); canvas.width = 256; canvas.height = 256;
     const ctx = canvas.getContext("2d");
@@ -235,7 +237,7 @@ function Scene({ onReady, reduced, panelList, panelRefs, ...p }: BattlefieldProp
       const burst = !!p.summon?.monsters.some((entry) => entry.uid === monster.uid && entry.owner === owner);
       return [<RareEnergy3D key={`${monster.uid}-${burst ? p.summon?.id : "aura"}`} x={(index - 2) * 1.17} z={z} card={monster.card} colors={colors} reduced={reduced} burst={burst} />];
     }))}
-    {p.combat?.battleResolved && p.combat.attackerCard && rareCard(p.combat.attackerCard) && <RareEnergy3D key={`rare-attack-${p.combat.id}`} x={0} z={p.combat.owner === (p.viewer ?? 0) ? .35 : -.35} card={p.combat.attackerCard} colors={colors} reduced={reduced} attack direction={p.combat.owner === (p.viewer ?? 0) ? -1 : 1} />}
+    {attackPath && p.combat?.attackerCard && <RareEnergy3D key={`rare-attack-${p.combat.id}`} x={attackPath.source[0]} z={attackPath.source[1]} targetX={attackPath.target[0]} targetZ={attackPath.target[1]} card={p.combat.attackerCard} colors={colors} reduced={reduced} attack direction={p.combat.owner === (p.viewer ?? 0) ? -1 : 1} />}
     <Energy reduced={reduced} onReady={onReady} />
     {p.combat && !(p.combat.attackerCard && rareCard(p.combat.attackerCard)) && <CombatPulse key={p.combat.id} event={p.combat} viewer={p.viewer ?? 0} reduced={reduced} />}
   </>;
@@ -246,12 +248,15 @@ export function Battlefield3D(p: BattlefieldProps) {
   const [reduced, setReduced] = useState(false);
   const panelRefs = useRef(new Map<string, HTMLDivElement>());
   const panelList = panels(p);
+  const path = rareAttackPath(p.combat, p.viewer ?? 0);
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
     const update = () => setReduced(media.matches); update(); media.addEventListener("change", update);
     return () => media.removeEventListener("change", update);
   }, []);
-  return <div className={cn("battlefield-scene", p.preview && "battlefield-preview")} data-scene-ready={ready ? "1" : undefined}>
+  return <div className={cn("battlefield-scene", p.preview && "battlefield-preview")} data-scene-ready={ready ? "1" : undefined}
+    data-rare-strike={path && p.combat?.attackerCard ? rareProfile(p.combat.attackerCard).strike : undefined}
+    data-rare-source={path?.source.join(",")} data-rare-target={path?.target.join(",")}>
     <Canvas camera={{ fov: 40, near: .1, far: 60 }} dpr={[1, 1.5]} frameloop={reduced ? "demand" : "always"} gl={{ alpha: true, antialias: true }}>
       <Scene {...p} reduced={reduced} panelList={panelList} panelRefs={panelRefs} onReady={() => setReady(true)} />
     </Canvas>
