@@ -1,5 +1,5 @@
 import rawCards from "./cards.json";
-import { cardImageUrl, type CardData, type CardKind } from "./catalog";
+import { CARDS, cardImageUrl, type CardData, type CardKind } from "./catalog";
 
 interface RawCard {
   id: number;
@@ -16,9 +16,9 @@ interface RawCard {
 
 // Classic-era catalog (Yu-Gi-Oh! Duel Monsters era sets + Egyptian Gods)
 // Servant, Spell Ruler) from the YGOPRODeck fan API.
-export const ALL_CARDS: CardData[] = (rawCards as RawCard[]).map((c) => ({
-  ...c,
-  imageUrl: cardImageUrl(c.id),
-}));
+export const ALL_CARDS: CardData[] = (rawCards as RawCard[]).map((c) => {
+  const rarity = CARDS.find((entry) => entry.id === c.id)?.rarity;
+  return { ...c, ...(rarity ? { rarity } : {}), imageUrl: cardImageUrl(c.id) };
+});
 
 export const CARDS_BY_ID = new Map<number, CardData>(ALL_CARDS.map((c) => [c.id, c]));

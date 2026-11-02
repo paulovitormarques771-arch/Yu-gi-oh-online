@@ -1,8 +1,9 @@
 import type { CardData } from "@/data/catalog";
 import type { AttackContext, DuelState, PlayerId } from "@/lib/duel-engine";
+import { rareCard } from "@/lib/duel-setup";
 
 export type CombatEvent = {
-  id: number; owner: PlayerId; attackerUid?: string; targetUid?: string;
+  id: number; owner: PlayerId; attackerUid?: string; targetUid?: string; targetIndex?: number; battleResolved: boolean;
   attackerCard?: CardData; targetCard?: CardData; damages: { owner: PlayerId; amount: number }[];
   destroyed: { uid: string; owner: PlayerId; card: CardData; index: number }[];
 };
@@ -36,6 +37,19 @@ export function combatEvent(before: DuelState, after: DuelState, id: number): Co
   const enemy: PlayerId = owner === 0 ? 1 : 0;
   const a = before.players[owner].monsters.find((m) => m?.uid === attack?.attackerUid);
   const hit = attack?.targetUid ? before.players[enemy].monsters.find((m) => m?.uid === attack?.targetUid) : undefined;
-  return { id, owner, ...(attack ? { attackerUid: attack.attackerUid, targetUid: attack.targetUid } : {}),
+  const targetIndex = attack?.targetUid ? before.players[enemy].monsters.findIndex((m) => m?.uid === attack?.targetUid) : -1;
+  return { id, owner, battleResolved: !!after.lastBattle && after.lastBattle.sequence !== before.lastBattle?.sequence, ...(attack ? { attackerUid: attack.attackerUid, targetUid: attack.targetUid } : {}),
+    ...(targetIndex >= 0 ? { targetIndex } : {}),
     ...(a && !a.faceDown ? { attackerCard: a.card } : {}), ...(hit && !hit.faceDown ? { targetCard: hit.card } : {}), damages, destroyed };
+}
+
+export type RareSummonEvent = { id: number; monsters: { uid: string; owner: PlayerId; index: number; card: CardData }[] };
+
+export function rareSummonEvent(before: DuelState, after: DuelState, id: number): RareSummonEvent | null {
+  const monsters = ([0, 1] as const).flatMap((owner) => after.players[owner].monsters.flatMap((monster, index) => {
+    if (!monster || monster.faceDown || !rareCard(monster.card)) return [];
+    const old = before.players[owner].monsters.find((entry) => entry?.uid === monster.uid);
+    return !old || old.faceDown ? [{ uid: monster.uid, owner, index, card: monster.card }] : [];
+  }));
+  return monsters.length ? { id, monsters } : null;
 }
