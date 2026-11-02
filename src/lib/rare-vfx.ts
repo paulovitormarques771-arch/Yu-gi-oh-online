@@ -20,7 +20,8 @@ const profiles: Record<number, RareProfile> = {
 };
 
 export function rareProfile(card: CardData): RareProfile {
-  if (profiles[card.id]) return profiles[card.id];
+  const specific = profiles[card.id];
+  if (specific) return specific;
   if (/dragon|dragão/i.test(card.race ?? "")) return { model: "dragon", strike: "breath", color: "cyan", scale: 1 };
   if (/warrior|guerreiro/i.test(card.race ?? "")) return { model: "colossus", strike: "punch", color: "gold", scale: 1 };
   if (/fiend|demônio/i.test(card.race ?? "")) return { model: "demon", strike: "thunder", color: "magic", scale: 1 };

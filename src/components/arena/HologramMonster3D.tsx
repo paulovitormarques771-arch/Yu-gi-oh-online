@@ -67,7 +67,7 @@ function Humanoid({ color, core, attacking, reduced, strike, colossus, demon }: 
     </>}
     {[-1, 1].map((side) => <group key={side} position={[side * (broad ? .46 : .3), 1.18, 0]}>
       <mesh scale={[broad ? .24 : .12, .18, .19]}><sphereGeometry args={[1, 8, 8]} /><Skin color={core} /></mesh>
-      <group ref={side === 1 ? arm : undefined}>
+      <group ref={side === 1 ? arm : null}>
         <mesh position={[0, -.28, 0]}><cylinderGeometry args={[broad ? .18 : .09, broad ? .15 : .07, .55, 8]} /><Skin color={color} /></mesh>
         <mesh position={[0, -.58, .03]}><boxGeometry args={broad ? [.35, .33, .35] : [.14, .18, .14]} /><Skin color={core} /></mesh>
         {!broad && side === 1 && <group position={[0, -.55, .09]}>
