@@ -30,7 +30,8 @@ describe("rare holographic attacks", () => {
   it("does not reveal a hidden attacker or launch on spell-only damage", () => {
     const event = battle().event;
     if (!event) throw new Error("Missing combat event");
-    expect(rareAttackPath({ ...event, attackerCard: undefined } as never, 0)).toBeNull();
+    const { attackerCard: _privateCard, ...hiddenEvent } = event;
+    expect(rareAttackPath(hiddenEvent, 0)).toBeNull();
     expect(rareAttackPath({ ...event, battleResolved: false }, 0)).toBeNull();
   });
   it("uses distinct monster-specific breath, magic, solar and fist strikes", () => {
