@@ -138,7 +138,7 @@ function panels(p: BattlefieldProps): Panel[] {
       <span className="arena-deck-count">BARALHO <b>{deck.player.deck.length}</b></span>
     </div> });
   });
-  [{x: 3.7, z: -1.8, cards: p.opponent.graveyard, enemy: true}, {x: -3.7, z: 1.8, cards: p.me.graveyard, enemy: false}].forEach((g) => {
+  [{x: 3.7, z: -1.45, cards: p.opponent.graveyard, enemy: true}, {x: -3.7, z: 1.45, cards: p.me.graveyard, enemy: false}].forEach((g) => {
     const last = g.cards[g.cards.length - 1];
     result.push({ id: `grave-${g.enemy}`, x: g.x, y: .05, z: g.z,
       content: last ? <ArenaCard card={last} onClick={() => p.onInspect?.(last, g.enemy)} /> : <div className="arena-grave-mark"><span>◇</span><small>CEMITÉRIO</small></div> });
@@ -146,7 +146,7 @@ function panels(p: BattlefieldProps): Panel[] {
   if (p.drawEvent) p.drawEvent.cards.forEach((card, i) => {
     const own = p.drawEvent?.owner === (p.viewer ?? 0);
     result.push({ id: `draw-${p.drawEvent?.id}-${i}`, x: own ? 3.7 : -3.7, y: .28, z: own ? 2.5 : -2.5,
-      content: <div className={`arena-drawn-card ${own ? "draw-to-own" : "draw-to-enemy"}`}><ArenaCard card={own ? card : null} hidden={!own} /></div> });
+      content: <div data-draw-order={i} className={`arena-drawn-card ${own ? "draw-to-own" : "draw-to-enemy"}`}><ArenaCard card={own ? card : null} hidden={!own} /></div> });
   });
   if (p.combat) {
     const event = p.combat;
@@ -247,8 +247,8 @@ function Scene({ onReady, reduced, panelList, panelRefs, ...p }: BattlefieldProp
     }))}
     <DeckStack x={-3.7} z={-2.5} />
     <DeckStack x={3.7} z={2.5} />
-    <Frame x={3.7} z={-1.8} color={colors.magic} />
-    <Frame x={-3.7} z={1.8} color={colors.magic} />
+    <Frame x={3.7} z={-1.45} color={colors.magic} />
+    <Frame x={-3.7} z={1.45} color={colors.magic} />
     <Frame x={-3.7} z={3.05} color={colors.gold} />
     <Frame x={3.7} z={-3.05} color={colors.gold} />
     {panelList.map((panel) => <ProjectPanel key={panel.id} panel={panel} refs={panelRefs} />)}

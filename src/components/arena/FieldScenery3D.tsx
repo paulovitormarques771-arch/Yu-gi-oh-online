@@ -1,17 +1,19 @@
 import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
-import type { Group } from "three";
+import type { Group, MeshBasicMaterial } from "three";
 import type { FieldTheme } from "@/lib/field-spells";
 
 type Colors = { cyan: string; green: string; gold: string; magic: string; surface: string; foreground: string; ink: string; damage: string };
 /** Symbolic original terrain stays below zones and around the board, never hiding cards. */
 export function FieldScenery3D({ theme, colors: c, reduced }: { theme: FieldTheme; colors: Colors; reduced: boolean }) {
   const animated = useRef<Group>(null);
-  useFrame(({ clock }) => { if (animated.current && !reduced) { animated.current.position.y = Math.sin(clock.elapsedTime * 1.6) * .035; animated.current.rotation.y = theme === "orichalcos" ? Math.sin(clock.elapsedTime * .3) * .025 : 0; } });
+  const pulse = useRef<MeshBasicMaterial>(null);
+  useFrame(({ clock }) => { if (animated.current && !reduced) { animated.current.position.y = 0; animated.current.rotation.y = theme === "orichalcos" ? Math.sin(clock.elapsedTime * .3) * .025 : 0; } if (pulse.current && !reduced) pulse.current.opacity = .35 + (Math.sin(clock.elapsedTime * 2.6) + 1) * .28; });
   const color = theme === "orichalcos" || theme === "forest" || theme === "meadow" ? c.green : theme === "ocean" ? c.cyan : theme === "dark" ? c.magic : c.gold;
   return <group ref={animated}>
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, .004, 0]}><planeGeometry args={[8.5, 7.3]} /><meshBasicMaterial color={theme === "orichalcos" || theme === "dark" ? c.ink : color} transparent opacity={theme === "orichalcos" ? .85 : .13} depthWrite={false} /></mesh>
     {theme === "orichalcos" && <group position={[0, .012, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      <mesh position={[0, 0, .001]}><ringGeometry args={[3.46, 3.56, 96]} /><meshBasicMaterial ref={pulse} color={c.green} transparent opacity={.7} toneMapped={false} /></mesh>
       {[1.4, 2.4, 3.5].map((r) => <mesh key={r}><ringGeometry args={[r, r + .025, 96]} /><meshBasicMaterial color={c.green} toneMapped={false} /></mesh>)}
       {[0, 1, 2, 3, 4, 5].map((i) => <group key={i} rotation={[0, 0, i * Math.PI / 3]}><mesh position={[0, 1.75, 0]} rotation={[0, 0, Math.PI / 3]}><planeGeometry args={[3.5, .03]} /><meshBasicMaterial color={c.green} toneMapped={false} /></mesh><mesh position={[0, 3, 0]}><ringGeometry args={[.09, .13, 3]} /><meshBasicMaterial color={c.foreground} toneMapped={false} /></mesh></group>)}
     </group>}
