@@ -307,7 +307,7 @@ function Arena({ online, selection, onPrepare }: { online?: OnlineSeat; selectio
       <footer className="arena-footer"><span>● {vsAI ? "TREINO CONTRA IA" : online ? "DUELO ONLINE" : "DUELO LOCAL"}</span><span>{aiTurn ? "TURNO DO OPONENTE" : `TURNO DE ${s.players[s.active].name.toUpperCase()}`}</span><span>DUEL ARENA · PROJETO DE FÃS</span></footer>
     </main>
     <CardZoom card={zoom?.card ?? null} owner={zoom?.owner} onClose={() => setZoom(null)} actions={modalActions} />
-    {s.pending?.kind === "response" && playable && <TrapConfirmation spells={availableResponses(s)} onActivate={(uid) => act({ type: "activateField", uid })} onPass={() => act({ type: "passResponse" })} />
+    {s.pending?.kind === "response" && playable && <TrapConfirmation spells={availableResponses(s)} onActivate={(uid) => act({ type: "activateField", uid })} onPass={() => act({ type: "passResponse" })} />}
     {opening && <DuelOpening />}
     {s.winner === null && phaseNotice && <PhaseAnnouncement key={`${phaseNotice.turn}-${phaseNotice.label}`} {...phaseNotice} />}
     <DamageAnnouncement event={combat} view={view} />

@@ -130,11 +130,14 @@ export function effectChoices(s: DuelState, owner: PlayerId, card: CardData, sou
     if (target === "graveMonster" || target === "graveSpell" && p === owner) s.players[p].graveyard.forEach((c, i) => {
       if (target === "graveMonster" && c.kind === "monster" && !/Fusion|Ritual/.test(c.type ?? "") || target === "graveSpell" && c.kind === "spell") list.push({ owner: p, zone: "graveyard", index: i });
     });
-    if (target === "spellTrap") s.players[p].spells.forEach((spell) => { if (spell && spell.uid !== sourceUid) list.push({ owner: p, zone: "spell", uid: spell.uid }); });
-    if (target === "spellTrap" && s.players[p].fieldSpell?.uid !== sourceUid && s.players[p].fieldSpell) list.push({ owner: p, zone: "field", uid: s.players[p].fieldSpell?.uid });
+    if (target === "spellTrap" && (card.id !== 60082869 || p !== owner)) {
+      s.players[p].spells.forEach((spell) => { if (spell && spell.uid !== sourceUid) list.push({ owner: p, zone: "spell", uid: spell.uid }); });
+      const field = s.players[p].fieldSpell;
+      if (field && field.uid !== sourceUid) list.push({ owner: p, zone: "field", uid: field.uid });
+    }
   }
   if (target === "fieldDeck") s.players[owner].deck.forEach((h) => { if (isFieldSpell(h.card)) list.push({ owner, zone: "deck", uid: h.uid }); });
-  if (target === "fusion" && s.players[owner].monsters.some((m) => !m) || target === "fusion") {
+  if (target === "fusion") {
     (s.players[owner].extraDeck ?? []).forEach((c, index) => {
       const materials = fusionMaterials(c, fusionPool(s, owner, card.id === 48130397));
       if (materials && (s.players[owner].monsters.some((m) => !m) || materials.some((m) => m.owner === owner && m.zone === "monster"))) list.push({ owner, zone: "extra", index });
@@ -152,7 +155,7 @@ export function choiceCard(s: DuelState, choice: EffectChoice): CardData | null 
   const p = s.players[choice.owner];
   if (choice.zone === "graveyard") return choice.index === undefined ? null : p.graveyard[choice.index] ?? null;
   if (choice.zone === "extra") return choice.index === undefined ? null : p.extraDeck?.[choice.index] ?? null;
-  if (choice.zone === "field") return p.fieldSpell?.uid === choice.uid ? p.fieldSpell.card : null;
+  if (choice.zone === "field") { const field = p.fieldSpell; return field && field.uid === choice.uid ? field.card : null; }
   if (choice.zone === "deck" || choice.zone === "hand") return p[choice.zone].find((h) => h.uid === choice.uid)?.card ?? null;
   const zones = choice.zone === "monster" ? p.monsters : p.spells;
   return zones.find((c) => c?.uid === choice.uid)?.card ?? null;
@@ -318,7 +321,7 @@ export function applyAction(state: DuelState, action: Action): DuelState {
         const cost = me.hand.find((h) => h.uid === action.choice.uid && h.uid !== pending.sourceUid);
         if (action.choice.zone !== "hand" || action.choice.owner !== actor || !cost) fail("Escolha outra carta da mão para descartar.");
         const choices = effectChoices(s, actor, pending.sourceCard, pending.sourceUid);
-        if (effectFor(pending.sourceCard)?.target !== "none") { s.pending = { ...pending, stage: undefined, costUid: cost.uid, choices }; return s; }
+        if (effectFor(pending.sourceCard)?.target !== "none") { const { stage: _stage, ...rest } = pending; s.pending = { ...rest, costUid: cost.uid, choices }; return s; }
         s.pending = null; resolveEffect(s, actor, pending.sourceCard, pending.sourceUid, pending.sourceZone, undefined, cost.uid); return s;
       }
       const fresh = effectChoices(s, actor, pending.sourceCard, pending.sourceUid);

@@ -28,6 +28,8 @@ export function planningState(state: DuelState, actor: PlayerId, profile: Playst
   enemy.deck = enemy.deck.map((h) => ({ uid: h.uid, card: unknown }));
   enemy.monsters = enemy.monsters.map((m) => m?.faceDown ? { ...m, card: unknown, boost: 0 } : m);
   enemy.spells = enemy.spells.map((m) => m?.faceDown ? { ...m, card: { ...unknown, kind: "trap", type: "Trap Card" } } : m);
+  if (enemy.fieldSpell?.faceDown) enemy.fieldSpell = { ...enemy.fieldSpell, card: { ...unknown, kind: "spell", race: "Field" } };
+  enemy.extraDeck = (enemy.extraDeck ?? []).map(() => ({ ...unknown, type: "Fusion Monster" }));
   return s;
 }
 
@@ -54,7 +56,7 @@ function candidates(s: DuelState): Action[] {
       }
     }
     for (const m of p.monsters) if (m && m.summonedTurn !== s.turn && !m.attacked) actions.push({ type: "changePosition", uid: m.uid, actor });
-    for (const spell of p.spells) if (spell?.faceDown && spell.card.kind === "spell" && effectFor(spell.card)?.timing === "main") actions.push({ type: "activateField", uid: spell.uid, actor });
+    for (const spell of [...p.spells, p.fieldSpell]) if (spell?.faceDown && spell.card.kind === "spell" && effectFor(spell.card)?.timing === "main") actions.push({ type: "activateField", uid: spell.uid, actor });
   }
   if (s.phase === "battle") for (const m of p.monsters) {
     if (!m || !canAttack(s, m)) continue;
@@ -138,7 +140,7 @@ function easyAction(s: DuelState): Action {
   if (s.phase === "main1") {
     const flip = me.monsters.find((m) => m?.faceDown && m.summonedTurn !== s.turn);
     if (flip) return { type: "changePosition", uid: flip.uid };
-    const fieldMagic = me.spells.find((m) => m?.faceDown && m.card.kind === "spell" && effectFor(m.card)?.timing === "main");
+    const fieldMagic = [...me.spells, me.fieldSpell].find((m) => m?.faceDown && m.card.kind === "spell" && effectFor(m.card)?.timing === "main");
     if (fieldMagic) { try { const action: Action = { type: "activateField", uid: fieldMagic.uid }; applyAction(s, action); return action; } catch { /* Not every set spell has a valid target. */ } }
     const magic = me.hand.find((h) => {
       const effect = effectFor(h.card);
