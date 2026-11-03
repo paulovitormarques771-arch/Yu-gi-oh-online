@@ -52,6 +52,10 @@ export const ATTRIBUTE_LABELS: Record<string, string> = {
 
 // Iconic cards for the landing page (ids match the YGOPRODeck CDN).
 export const CARDS: CardData[] = [
+  { id: 77585513, name: "Jinzo", kind: "monster", race: "Machine", level: 6, atk: 2400, def: 1500, attribute: "DARK", rarity: "ultra", desc: "Armadilhas não podem ser ativadas e seus efeitos no campo são negados.", imageUrl: cardImageUrl(77585513) },
+  { id: 35803249, name: "Jinzo - Lord", kind: "monster", race: "Machine", level: 8, atk: 2600, def: 1600, attribute: "DARK", rarity: "ultra", desc: "Invocação-Especial enviando um Jinzo com a face para cima ao Cemitério. Nega armadilhas.", imageUrl: cardImageUrl(35803249) },
+  { id: 78193831, name: "Buster Blader", kind: "monster", race: "Warrior", level: 7, atk: 2600, def: 2300, rarity: "super", desc: "Ganha 500 ATK para cada Dragão no campo ou Cemitério do oponente.", imageUrl: cardImageUrl(78193831) },
+  { id: 23995346, name: "Dragão Supremo de Olhos Azuis", kind: "monster", race: "Dragon", level: 12, atk: 4500, def: 3800, rarity: "lendaria", desc: "Fusão de três Dragões Brancos de Olhos Azuis.", imageUrl: cardImageUrl(23995346) },
   { id: 46986414, name: "Mago Negro", kind: "monster", attribute: "DARK", level: 7, race: "Mago", atk: 2500, def: 2100, desc: "O mago supremo em termos de ataque e defesa.", rarity: "ultra", character: "yami-yugi", imageUrl: cardImageUrl(46986414) },
   { id: 38033121, name: "Garota Maga Negra", kind: "monster", attribute: "DARK", level: 6, race: "Mago", atk: 2000, def: 1700, desc: "Ganha 300 ATK para cada \"Mago Negro\" nos Cemitérios.", rarity: "ultra", character: "yugi-muto", imageUrl: cardImageUrl(38033121) },
   { id: 89631139, name: "Dragão Branco de Olhos Azuis", kind: "monster", attribute: "LIGHT", level: 8, race: "Dragão", atk: 3000, def: 2500, desc: "Este lendário dragão é uma poderosa máquina de destruição.", rarity: "lendaria", character: "seto-kaiba", imageUrl: cardImageUrl(89631139) },
