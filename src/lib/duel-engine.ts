@@ -258,7 +258,7 @@ function resolveEffect(s: DuelState, owner: PlayerId, card: CardData, sourceUid:
         else { const index = p.hand.findIndex((h) => h.uid === material.uid); const h = p.hand[index]; if (h) { p.hand.splice(index, 1); p.graveyard.push(h.card); } }
       }
       const slot = p.monsters.findIndex((m) => !m); if (slot < 0) fail("Sem zona de monstro livre.");
-      p.extraDeck?.splice(choice.index, 1); p.monsters[slot] = { uid: uid(s), card: fusion, faceDown: false, position: "atk", attacked: false, summonedTurn: s.turn }; break;
+      p.extraDeck?.splice(choice.index, 1); p.properlySummoned = [...(p.properlySummoned ?? []), fusion.id]; p.monsters[slot] = { uid: uid(s), card: fusion, faceDown: false, position: "atk", attacked: false, summonedTurn: s.turn }; break;
     }
     case "bug": if (choice && index >= 0) destroyMonster(s, choice.owner, index); break;
     case "boost": { const m = choice ? s.players[choice.owner].monsters[index] : null; if (m) m.boost = (m.boost ?? 0) + (e.amount ?? 0); break; }
