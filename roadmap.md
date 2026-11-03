@@ -8,6 +8,13 @@
 - [ ] Etapa 7: animações, recursos visuais e acabamento
 
 ## Pedido atual
+- [ ] Confirmar combate ATK igual e três comparações contra DEF com testes concretos.
+- [ ] Espada nos LP, tremor, ATK aumentado em cor distinta e hologramas mais nítidos/personalizados.
+- [ ] Zona de campo, proteção do Selo e cenários 3D para os nove campos pedidos.
+- [ ] Corrigir renascimento, implementar efeitos/custos/alvos das magias e armadilhas solicitadas e confirmação grande.
+- [ ] Cinemáticas de efeitos e compra física do baralho à mão.
+- [ ] Garantir os nove monstros pedidos e raridade de Jinzo/Jinzo - Lord.
+- [ ] Validar regras/efeitos com testes e fluxo real de arena, incluindo cenários e respostas.
 - [x] Substituir brilho/foil por raios emitidos pelas cartas raras.
 - [x] Hologramas 3D originais emergindo da carta, com sopro, fogo, magia, raios solares ou soco conforme o monstro, até o alvo real. Novas artes específicas não geradas por falta de créditos de construção.
 - [x] Verificar raios, ataques a monstros/LP e privacidade em telas grandes/pequenas; 74 testes passaram.
