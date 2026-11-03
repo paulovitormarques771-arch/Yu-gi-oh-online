@@ -1,11 +1,12 @@
 import texts from "./card-texts.pt.json";
 import type { CardData } from "./catalog";
+import { EXPANSION_TEXT } from "./classic-expansion";
 
 type CardText = { name: string; desc: string; community: boolean };
 const portuguese: Record<string, CardText> = texts;
 
 export function cardText(card: CardData) {
-  return portuguese[String(card.id)] ?? { name: card.name, desc: card.desc, community: true };
+  return EXPANSION_TEXT[card.id] ?? portuguese[String(card.id)] ?? { name: card.name, desc: card.desc, community: true };
 }
 
 export const CARD_TYPE_PT: Record<string, string> = {

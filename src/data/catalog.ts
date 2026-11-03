@@ -65,6 +65,10 @@ export const CARDS: CardData[] = [
   { id: 24094653, name: "Polimerização", kind: "spell", desc: "Invoque por Fusão 1 Monstro de Fusão do seu Deck Adicional.", rarity: "rara", imageUrl: cardImageUrl(24094653) },
   { id: 83764718, name: "Monstro Renascido", kind: "spell", desc: "Escolha 1 monstro em qualquer Cemitério; Invoque-o por Invocação-Especial.", rarity: "super", imageUrl: cardImageUrl(83764718) },
   { id: 44095762, name: "Força do Espelho", kind: "trap", desc: "Quando um monstro do oponente declarar um ataque: destrua todos os monstros em Posição de Ataque dele.", rarity: "super", imageUrl: cardImageUrl(44095762) },
+  { id: 77585513, name: "Jinzo", kind: "monster", race: "Machine", level: 6, atk: 2400, def: 1500, attribute: "DARK", rarity: "ultra", desc: "Armadilhas não podem ser ativadas e seus efeitos no campo são negados.", imageUrl: cardImageUrl(77585513) },
+  { id: 35803249, name: "Jinzo - Lord", kind: "monster", race: "Machine", level: 8, atk: 2600, def: 1600, attribute: "DARK", rarity: "ultra", desc: "Invocação-Especial enviando um Jinzo com a face para cima ao Cemitério. Nega armadilhas.", imageUrl: cardImageUrl(35803249) },
+  { id: 78193831, name: "Buster Blader", kind: "monster", race: "Warrior", level: 7, atk: 2600, def: 2300, rarity: "super", desc: "Ganha 500 ATK para cada Dragão no campo ou Cemitério do oponente.", imageUrl: cardImageUrl(78193831) },
+  { id: 23995346, name: "Dragão Supremo de Olhos Azuis", kind: "monster", race: "Dragon", level: 12, atk: 4500, def: 3800, rarity: "lendaria", desc: "Fusão de três Dragões Brancos de Olhos Azuis.", imageUrl: cardImageUrl(23995346) },
 ];
 
 export interface Character {

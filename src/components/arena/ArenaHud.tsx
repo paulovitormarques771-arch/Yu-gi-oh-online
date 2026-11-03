@@ -2,6 +2,7 @@ import type { PlayerState } from "@/lib/duel-engine";
 import { START_LP } from "@/lib/duel-engine";
 import { cn } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
+import { Sword } from "lucide-react";
 
 export function ArenaHud({ player, avatar, enemy, active, damage, hitId }: { player: PlayerState; avatar?: string | undefined; enemy?: boolean; active?: boolean; damage?: number | undefined; hitId?: number | undefined }) {
   const [displayLP, setDisplayLP] = useState(player.lp);
@@ -24,7 +25,7 @@ export function ArenaHud({ player, avatar, enemy, active, damage, hitId }: { pla
     <div className="arena-avatar">{avatar && <img src={avatar} alt="" width={72} height={72} />}</div>
     <div className="arena-hud-readout">
       <div className="arena-hud-name"><span>{player.name}</span><small>{enemy ? "OPONENTE" : "DUELISTA"}</small></div>
-      <div className="arena-lp"><span>LP</span><strong aria-label={`${player.lp} pontos de vida`}>{displayLP.toLocaleString("pt-BR")}</strong><span className="arena-active-light" /></div>
+      <div className="arena-lp"><span>LP</span><strong aria-label={`${player.lp} pontos de vida`}>{displayLP.toLocaleString("pt-BR")}</strong><span className="arena-active-light" />{damage ? <Sword key={hitId} className="arena-hud-sword" aria-hidden="true" /> : null}</div>
       <meter min={0} max={START_LP} value={player.lp} aria-label={`Pontos de vida de ${player.name}`} />
     </div>
   </div>;

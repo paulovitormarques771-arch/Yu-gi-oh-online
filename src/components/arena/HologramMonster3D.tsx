@@ -6,7 +6,7 @@ import type { RareProfile } from "@/lib/rare-vfx";
 type FormProps = { color: string; core: string; attacking: boolean; reduced: boolean; strike: React.MutableRefObject<number> };
 
 function Skin({ color, wire = false }: { color: string; wire?: boolean }) {
-  return <meshBasicMaterial color={color} wireframe={wire} transparent opacity={wire ? .75 : .62} depthWrite={false} toneMapped={false} side={DoubleSide} />;
+  return wire ? <meshBasicMaterial color={color} wireframe transparent opacity={.36} depthWrite={false} toneMapped={false} side={DoubleSide} /> : <meshStandardMaterial color={color} roughness={.35} metalness={.45} emissive={color} emissiveIntensity={.18} side={DoubleSide} />;
 }
 
 function Dragon({ color, core, attacking, reduced, strike }: FormProps) {
@@ -21,7 +21,7 @@ function Dragon({ color, core, attacking, reduced, strike }: FormProps) {
     if (neck.current) neck.current.rotation.x = attacking ? -.2 + strike.current * .4 : Math.sin(clock.elapsedTime * 2) * .04;
   });
   return <group>
-    <mesh position={[0, .8, 0]} scale={[.36, .57, .35]}><sphereGeometry args={[1, 12, 10]} /><Skin color={color} /></mesh>
+    <mesh position={[0, .8, 0]} scale={[.36, .57, .35]}><sphereGeometry args={[1, 32, 24]} /><Skin color={color} /></mesh>
     <mesh position={[0, .8, 0]} scale={[.37, .58, .36]}><sphereGeometry args={[1, 8, 6]} /><Skin color={core} wire /></mesh>
     <group ref={neck} position={[0, 1.15, .1]}>
       <mesh position={[0, .28, .1]} rotation={[.3, 0, 0]}><cylinderGeometry args={[.15, .25, .65, 8]} /><Skin color={color} /></mesh>
@@ -88,5 +88,15 @@ function Humanoid({ color, core, attacking, reduced, strike, colossus, demon }: 
 /** Original articulated silhouettes; no external model or borrowed character artwork. */
 export function HologramMonster3D({ profile, color, core, attacking, reduced, strike }: FormProps & { profile: RareProfile }) {
   const props = { color, core, attacking, reduced, strike };
-  return <group scale={profile.scale}>{profile.model === "dragon" ? <Dragon {...props} /> : <Humanoid {...props} colossus={profile.model === "colossus"} demon={profile.model === "demon"} />}</group>;
+  const identity = profile.signature ?? 0;
+  return <group scale={profile.scale}>
+    {profile.model === "dragon" ? <Dragon {...props} /> : <Humanoid {...props} colossus={profile.model === "colossus" || profile.model === "machine"} demon={profile.model === "demon"} />}
+    {profile.model === "machine" && <group>
+      <mesh position={[0, 1.46, .17]}><boxGeometry args={[.34, .14, .12]} /><Skin color={core} /></mesh>
+      {[-1, 1].map((side) => <mesh key={side} position={[side * .12, 1.47, .25]}><sphereGeometry args={[.06, 16, 12]} /><meshBasicMaterial color={color} toneMapped={false} /></mesh>)}
+      <mesh position={[0, .96, .24]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[identity === 35803249 ? .27 : .18, .04, 12, 32]} /><Skin color={core} /></mesh>
+    </group>}
+    {Array.from({ length: profile.crest ?? 3 }, (_, i) => <mesh key={i} position={[(i - ((profile.crest ?? 3) - 1) / 2) * .1, 1.75 + (i % 2) * .06, -.07]} rotation={[0, 0, (i % 2 ? 1 : -1) * .2]}><coneGeometry args={[.035, .16 + (identity % 5) * .025, 6]} /><Skin color={core} /></mesh>)}
+    <mesh position={[0, .82, -.26]} rotation={[0, 0, (identity % 13) * .1]}><torusGeometry args={[.35 + (identity % 7) * .02, .025, 8, 24]} /><Skin color={core} /></mesh>
+  </group>;
 }

@@ -4,13 +4,18 @@ import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { CanvasTexture, SRGBColorSpace, Vector3, type Points, type MeshBasicMaterial, type Group } from "three";
 import { ArenaCard, CardBack } from "@/components/arena/ArenaCard";
 import type { CardData } from "@/data/catalog";
-import type { PlayerState } from "@/lib/duel-engine";
+import { monsterAtk, monsterDef, type DuelState, type PlayerState } from "@/lib/duel-engine";
 import { cn } from "@/lib/utils";
 import type { CombatEvent, RareSummonEvent } from "@/lib/arena-events";
 import { FieldCardMenu, type FieldMenuActions } from "@/components/arena/FieldCardMenu";
 import { RareEnergy3D } from "@/components/arena/RareEnergy3D";
 import { rareCard } from "@/lib/duel-setup";
 import { rareAttackPath, rareProfile } from "@/lib/rare-vfx";
+import { FieldScenery3D } from "@/components/arena/FieldScenery3D";
+import { SpellCinematic3D } from "@/components/arena/SpellCinematic3D";
+import { activeField, FIELD_THEMES } from "@/lib/field-spells";
+import type { DrawEvent, SpellEvent } from "@/lib/spell-cinematics";
+import { DrawFlight } from "@/components/arena/DrawFlight";
 
 export type BattlefieldProps = {
   me: PlayerState; opponent: PlayerState; selected?: string | null; tributes?: string[]; target?: string | null;
@@ -21,6 +26,7 @@ export type BattlefieldProps = {
   onDraw?: () => void; canDraw?: boolean; preview?: boolean;
   combat?: CombatEvent | null; viewer?: 0 | 1; attackers?: string[]; choosingTributes?: boolean;
   summon?: RareSummonEvent | null;
+  state?: DuelState; spellEvent?: SpellEvent | null; drawEvent?: DrawEvent | null;
   cardMenu?: (uid: string, enemy: boolean) => FieldMenuActions;
 };
 
@@ -113,19 +119,27 @@ function panels(p: BattlefieldProps): Panel[] {
     const hidden = row.enemy && zone.faceDown;
     const shown = hidden ? null : zone.card;
     const selected = p.selected === zone.uid || p.tributes?.includes(zone.uid) || p.target === zone.uid;
+    const owner = row.enemy ? (p.viewer ?? 0) === 0 ? 1 : 0 : p.viewer ?? 0;
+    const atk = "position" in zone && p.state && !hidden && !zone.faceDown ? monsterAtk(p.state, owner, zone) : undefined;
+    const def = "position" in zone && p.state && !hidden && !zone.faceDown ? monsterDef(p.state, owner, zone) : undefined;
     const card = <ArenaCard data-field-uid={zone.uid} data-field-side={row.enemy ? "enemy" : "own"} card={shown} hidden={hidden} defensive={"position" in zone && zone.position === "def"} faceDown={!row.enemy && zone.faceDown} selected={selected}
+        attackValue={atk} defenseValue={def} boosted={atk !== undefined && atk > (zone.card.atk ?? 0)}
         className={cn(p.combat?.attackerUid === zone.uid && "arena-card-strike", p.combat?.targetUid === zone.uid && "arena-card-hit", !row.enemy && !row.spell && p.attackers?.includes(zone.uid) && "arena-card-available", !row.enemy && !row.spell && p.choosingTributes && "arena-card-tribute")}
         onClick={() => row.enemy ? (row.spell ? shown && p.onInspect?.(shown, true) : p.onOpponentCard?.(zone.uid, shown)) : row.spell ? (p.onOwnSpell ? p.onOwnSpell(zone.uid, zone.card) : p.onInspect?.(zone.card, false)) : p.onOwnCard?.(zone.uid, zone.card)} />;
     result.push({ id: `zone-${ri}-${i}`, x: (i - 2) * 1.17, y: .06, z: row.z,
       content: !row.spell && p.cardMenu ? <FieldCardMenu actions={p.cardMenu(zone.uid, row.enemy)}>{card}</FieldCardMenu> : card });
   }));
+  [{ player: p.me, enemy: false, x: -3.7, z: 3.05 }, { player: p.opponent, enemy: true, x: 3.7, z: -3.05 }].forEach(({player, enemy, x, z}) => {
+    const field = player.fieldSpell;
+    result.push({ id: `field-${enemy}`, x, y: .06, z, content: field ? <ArenaCard data-field-zone={enemy ? "enemy" : "own"} card={enemy && field.faceDown ? null : field.card} hidden={enemy && field.faceDown} faceDown={!enemy && field.faceDown} onClick={() => enemy ? !field.faceDown && p.onInspect?.(field.card, true) : p.onOwnSpell?.(field.uid, field.card)} /> : <div className="arena-field-mark">MAGIA<br />DE CAMPO</div> });
+  });
   [{x: -3.7, z: -2.5, player: p.opponent, enemy: true}, {x: 3.7, z: 2.5, player: p.me, enemy: false}].forEach((deck) => {
     result.push({ id: `deck-${deck.enemy}`, x: deck.x, y: .213, z: deck.z, content: <div>
-      <ArenaCard hidden card={null} label={`${deck.enemy ? "Baralho adversário" : "Seu baralho"}: ${deck.player.deck.length} cartas`} onClick={!deck.enemy && p.canDraw ? p.onDraw : undefined} className="arena-deck-top" />
+      <ArenaCard data-deck-side={deck.enemy ? "enemy" : "own"} hidden card={null} label={`${deck.enemy ? "Baralho adversário" : "Seu baralho"}: ${deck.player.deck.length} cartas`} onClick={!deck.enemy && p.canDraw ? p.onDraw : undefined} className="arena-deck-top" />
       <span className="arena-deck-count">BARALHO <b>{deck.player.deck.length}</b></span>
     </div> });
   });
-  [{x: 3.7, z: -1.8, cards: p.opponent.graveyard, enemy: true}, {x: -3.7, z: 1.8, cards: p.me.graveyard, enemy: false}].forEach((g) => {
+  [{x: 3.7, z: -1.45, cards: p.opponent.graveyard, enemy: true}, {x: -3.7, z: 1.45, cards: p.me.graveyard, enemy: false}].forEach((g) => {
     const last = g.cards[g.cards.length - 1];
     result.push({ id: `grave-${g.enemy}`, x: g.x, y: .05, z: g.z,
       content: last ? <ArenaCard card={last} onClick={() => p.onInspect?.(last, g.enemy)} /> : <div className="arena-grave-mark"><span>◇</span><small>CEMITÉRIO</small></div> });
@@ -186,7 +200,6 @@ function CombatPulse({ event, viewer, reduced }: { event: CombatEvent; viewer: 0
   });
   return <group ref={group} position={[0, .3, z]}>
     <mesh rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[.38, .46, 40]} /><meshBasicMaterial color={colors.gold} transparent opacity={.65} toneMapped={false} /></mesh>
-    <mesh position={[0, .45, 0]}><coneGeometry args={[.8, 1.1, 8, 1, true]} /><meshBasicMaterial color={colors.cyan} wireframe transparent opacity={.6} toneMapped={false} /></mesh>
     <pointLight intensity={8} color={colors.gold} distance={4} />
   </group>;
 }
@@ -218,6 +231,7 @@ function Scene({ onReady, reduced, panelList, panelRefs, ...p }: BattlefieldProp
     <Environment resolution={64}><Lightformer intensity={2} position={[0, 5, 0]} scale={[10, 10, 1]} /><Lightformer intensity={1} color={colors.cyan} position={[-5, 1, -1]} rotation-y={Math.PI / 2} scale={[20, 1, 1]} /></Environment>
     <mesh position={[0, -.17, 0]}><boxGeometry args={[8.65, .3, 7.48]} /><meshStandardMaterial color={colors.edge} metalness={.7} roughness={.35} /></mesh>
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -.008, 0]}><planeGeometry args={[8.56, 7.4]} /><meshStandardMaterial map={surface} metalness={.4} roughness={.65} /></mesh>
+    {(() => { const field = activeField([p.me.fieldSpell, p.opponent.fieldSpell]); const theme = field ? FIELD_THEMES[field.card.id] : undefined; return theme ? <FieldScenery3D key={field?.uid} theme={theme} colors={colors} reduced={reduced} /> : null; })()}
     {[-1, 1].map((n) => <group key={n}>
       <mesh position={[n * 4.28, .01, 0]}><boxGeometry args={[.035, .025, 7.4]} /><meshBasicMaterial color={n < 0 ? colors.cyan : colors.green} toneMapped={false} /></mesh>
       <mesh position={[0, .01, n * 3.7]}><boxGeometry args={[8.6, .025, .035]} /><meshBasicMaterial color={n < 0 ? colors.cyan : colors.green} toneMapped={false} /></mesh>
@@ -229,8 +243,10 @@ function Scene({ onReady, reduced, panelList, panelRefs, ...p }: BattlefieldProp
     }))}
     <DeckStack x={-3.7} z={-2.5} />
     <DeckStack x={3.7} z={2.5} />
-    <Frame x={3.7} z={-1.8} color={colors.magic} />
-    <Frame x={-3.7} z={1.8} color={colors.magic} />
+    <Frame x={3.7} z={-1.45} color={colors.magic} />
+    <Frame x={-3.7} z={1.45} color={colors.magic} />
+    <Frame x={-3.7} z={3.05} color={colors.gold} />
+    <Frame x={3.7} z={-3.05} color={colors.gold} />
     {panelList.map((panel) => <ProjectPanel key={panel.id} panel={panel} refs={panelRefs} />)}
     {[{ player: p.me, owner: p.viewer ?? 0, z: 1.02 }, { player: p.opponent, owner: (p.viewer ?? 0) === 0 ? 1 : 0, z: -1.02 }].flatMap(({ player, owner, z }) => player.monsters.flatMap((monster, index) => {
       if (!monster || monster.faceDown || !rareCard(monster.card)) return [];
@@ -239,6 +255,7 @@ function Scene({ onReady, reduced, panelList, panelRefs, ...p }: BattlefieldProp
     }))}
     {attackPath && p.combat?.attackerCard && <RareEnergy3D key={`rare-attack-${p.combat.id}`} x={attackPath.source[0]} z={attackPath.source[1]} targetX={attackPath.target[0]} targetZ={attackPath.target[1]} card={p.combat.attackerCard} colors={colors} reduced={reduced} attack direction={p.combat.owner === (p.viewer ?? 0) ? -1 : 1} />}
     <Energy reduced={reduced} onReady={onReady} />
+    {p.spellEvent && <SpellCinematic3D key={p.spellEvent.id} event={p.spellEvent} viewer={p.viewer ?? 0} colors={colors} reduced={reduced} />}
     {p.combat && !(p.combat.attackerCard && rareCard(p.combat.attackerCard)) && <CombatPulse key={p.combat.id} event={p.combat} viewer={p.viewer ?? 0} reduced={reduced} />}
   </>;
 }
@@ -254,10 +271,12 @@ export function Battlefield3D(p: BattlefieldProps) {
     const update = () => setReduced(media.matches); update(); media.addEventListener("change", update);
     return () => media.removeEventListener("change", update);
   }, []);
+  const field = activeField([p.me.fieldSpell, p.opponent.fieldSpell]);
   return <div className={cn("battlefield-scene", p.preview && "battlefield-preview")} data-scene-ready={ready ? "1" : undefined}
+    data-field-theme={field ? FIELD_THEMES[field.card.id] : undefined} data-spell-cinematic={p.spellEvent?.kind}
     data-rare-strike={path && p.combat?.attackerCard ? rareProfile(p.combat.attackerCard).strike : undefined}
     data-rare-source={path?.source.join(",")} data-rare-target={path?.target.join(",")}>
-    <Canvas camera={{ fov: 40, near: .1, far: 60 }} dpr={[1, 1.5]} frameloop={reduced ? "demand" : "always"} gl={{ alpha: true, antialias: true }}>
+    <Canvas camera={{ fov: 40, near: .1, far: 60 }} dpr={[1, 2]} frameloop={reduced ? "demand" : "always"} gl={{ alpha: true, antialias: true }}>
       <Scene {...p} reduced={reduced} panelList={panelList} panelRefs={panelRefs} onReady={() => setReady(true)} />
     </Canvas>
     {panelList.map((panel) => <div className="arena-projected-panel" key={panel.id} ref={(element) => { if (element) panelRefs.current.set(panel.id, element); else panelRefs.current.delete(panel.id); }}>
@@ -266,5 +285,6 @@ export function Battlefield3D(p: BattlefieldProps) {
     {!ready && <div className="arena-loading"><CardBack /><span>PREPARANDO O CAMPO</span></div>}
     <div className="arena-row-label enemy-label">MONSTROS · OPONENTE</div>
     <div className="arena-row-label own-label">MAGIAS & ARMADILHAS</div>
+    {p.drawEvent && <DrawFlight key={p.drawEvent.id} event={p.drawEvent} viewer={p.viewer ?? 0} />}
   </div>;
 }
