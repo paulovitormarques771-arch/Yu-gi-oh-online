@@ -70,7 +70,7 @@ export function RareEnergy3D({ x, z, colors, card, reduced, burst = false, attac
       projectile.current.rotation.y += reduced ? 0 : delta * 4;
     }
     if (beam.current) {
-      beam.current.visible = attack && (reduced || f.projectile) && ["breath", "fire", "solar", "thunder"].includes(profile.strike);
+      beam.current.visible = attack && (reduced || f.projectile) && ["breath", "fire", "solar", "thunder", "plasma", "psychic"].includes(profile.strike);
       vectors.from.set(0, 1.9, 0);
       vectors.to.set(dx * f.strike, .3 + 1.6 * (1 - f.strike), dz * f.strike);
       vectors.delta.copy(vectors.to).sub(vectors.from);
@@ -87,15 +87,16 @@ export function RareEnergy3D({ x, z, colors, card, reduced, burst = false, attac
   return <group position={[x, .08, z]}>
     <Lightning color={color} reduced={reduced} intense={burst || attack} />
     <group ref={model} visible={attack || burst} rotation={[0, direction < 0 ? Math.PI : 0, 0]}>
+      <pointLight position={[0, 2, 1]} intensity={3} color={colors.foreground} distance={4} />
       <HologramMonster3D profile={profile} color={color} core={colors.foreground} attacking={attack} reduced={reduced} strike={strike} />
     </group>
     {attack && <>
       <group ref={projectile} visible={false}>
         <mesh><icosahedronGeometry args={[profile.strike === "spell" ? .24 : .18, 1]} /><meshBasicMaterial color={color} transparent opacity={.85} toneMapped={false} /></mesh>
         <mesh rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[.33, .026, 6, 24]} /><meshBasicMaterial color={colors.foreground} toneMapped={false} /></mesh>
-        {profile.strike === "spell" && <mesh rotation={[0, 0, Math.PI / 2]}><torusGeometry args={[.42, .018, 6, 24]} /><meshBasicMaterial color={color} toneMapped={false} /></mesh>}
+        {["spell", "psychic"].includes(profile.strike) && <mesh rotation={[0, 0, Math.PI / 2]}><torusGeometry args={[.42, .018, 12, 40]} /><meshBasicMaterial color={color} toneMapped={false} /></mesh>}
       </group>
-      <mesh ref={beam} visible={false}><cylinderGeometry args={[profile.strike === "thunder" ? .035 : .12, .035, 1, 8]} /><meshBasicMaterial color={color} transparent opacity={.8} toneMapped={false} depthWrite={false} /></mesh>
+      <mesh ref={beam} visible={false}><cylinderGeometry args={[profile.beamWidth ?? .12, .035, 1, 16]} /><meshBasicMaterial color={color} transparent opacity={.9} toneMapped={false} depthWrite={false} /></mesh>
       <group ref={impact} position={[dx, .3, dz]} visible={false}>
         {Array.from({ length: 8 }, (_, i) => <mesh key={i} rotation={[0, i * Math.PI / 4, Math.PI / 3]}><coneGeometry args={[.07, 1.6, 4]} /><meshBasicMaterial color={i % 2 ? color : colors.foreground} transparent opacity={.75} toneMapped={false} /></mesh>)}
         {profile.strike === "punch" && <mesh rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[.4, .47, 32]} /><meshBasicMaterial color={color} toneMapped={false} side={2} /></mesh>}

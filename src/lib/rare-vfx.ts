@@ -2,10 +2,10 @@ import type { CardData } from "@/data/catalog";
 import type { CombatEvent } from "@/lib/arena-events";
 import { rareCard } from "@/lib/duel-setup";
 
-export type HologramKind = "dragon" | "mage" | "colossus" | "demon";
-export type StrikeKind = "breath" | "fire" | "thunder" | "solar" | "punch" | "spell";
+export type HologramKind = "dragon" | "mage" | "colossus" | "demon" | "machine";
+export type StrikeKind = "breath" | "fire" | "thunder" | "solar" | "punch" | "spell" | "psychic" | "plasma";
 export type EnergyRole = "cyan" | "gold" | "magic" | "damage";
-export type RareProfile = { model: HologramKind; strike: StrikeKind; color: EnergyRole; scale: number };
+export type RareProfile = { model: HologramKind; strike: StrikeKind; color: EnergyRole; scale: number; signature?: number; crest?: number; beamWidth?: number };
 
 const profiles: Record<number, RareProfile> = {
   89631139: { model: "dragon", strike: "breath", color: "cyan", scale: 1 },
@@ -17,15 +17,21 @@ const profiles: Record<number, RareProfile> = {
   46986414: { model: "mage", strike: "spell", color: "magic", scale: 1 },
   38033121: { model: "mage", strike: "spell", color: "cyan", scale: .9 },
   70781052: { model: "demon", strike: "thunder", color: "magic", scale: 1 },
+  77585513: { model: "machine", strike: "psychic", color: "magic", scale: 1.08 },
+  35803249: { model: "machine", strike: "plasma", color: "damage", scale: 1.3 },
+  78193831: { model: "colossus", strike: "punch", color: "gold", scale: 1.05 },
+  23995346: { model: "dragon", strike: "breath", color: "cyan", scale: 1.35 },
 };
 
 export function rareProfile(card: CardData): RareProfile {
+  const identity = { signature: card.id, crest: 3 + Math.abs(card.id % 7), beamWidth: .05 + (Math.abs(card.id % 11) / 100) };
   const specific = profiles[card.id];
-  if (specific) return specific;
-  if (/dragon|dragão/i.test(card.race ?? "")) return { model: "dragon", strike: "breath", color: "cyan", scale: 1 };
-  if (/warrior|guerreiro/i.test(card.race ?? "")) return { model: "colossus", strike: "punch", color: "gold", scale: 1 };
-  if (/fiend|demônio/i.test(card.race ?? "")) return { model: "demon", strike: "thunder", color: "magic", scale: 1 };
-  return { model: "mage", strike: "spell", color: "magic", scale: 1 };
+  if (specific) return { ...specific, ...identity };
+  if (/dragon|dragão/i.test(card.race ?? "")) return { model: "dragon", strike: "breath", color: "cyan", scale: 1, ...identity };
+  if (/machine/i.test(card.race ?? "")) return { model: "machine", strike: "plasma", color: "cyan", scale: 1, ...identity };
+  if (/warrior|guerreiro/i.test(card.race ?? "")) return { model: "colossus", strike: "punch", color: "gold", scale: 1, ...identity };
+  if (/fiend|demônio/i.test(card.race ?? "")) return { model: "demon", strike: "thunder", color: "magic", scale: 1, ...identity };
+  return { model: "mage", strike: "spell", color: "magic", scale: 1, ...identity };
 }
 
 /** Only resolved, publicly visible attackers can launch a hologram. */
