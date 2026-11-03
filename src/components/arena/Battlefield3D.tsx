@@ -15,6 +15,7 @@ import { FieldScenery3D } from "@/components/arena/FieldScenery3D";
 import { SpellCinematic3D } from "@/components/arena/SpellCinematic3D";
 import { activeField, FIELD_THEMES } from "@/lib/field-spells";
 import type { DrawEvent, SpellEvent } from "@/lib/spell-cinematics";
+import { DrawFlight } from "@/components/arena/DrawFlight";
 
 export type BattlefieldProps = {
   me: PlayerState; opponent: PlayerState; selected?: string | null; tributes?: string[]; target?: string | null;
@@ -134,7 +135,7 @@ function panels(p: BattlefieldProps): Panel[] {
   });
   [{x: -3.7, z: -2.5, player: p.opponent, enemy: true}, {x: 3.7, z: 2.5, player: p.me, enemy: false}].forEach((deck) => {
     result.push({ id: `deck-${deck.enemy}`, x: deck.x, y: .213, z: deck.z, content: <div>
-      <ArenaCard hidden card={null} label={`${deck.enemy ? "Baralho adversário" : "Seu baralho"}: ${deck.player.deck.length} cartas`} onClick={!deck.enemy && p.canDraw ? p.onDraw : undefined} className="arena-deck-top" />
+      <ArenaCard data-deck-side={deck.enemy ? "enemy" : "own"} hidden card={null} label={`${deck.enemy ? "Baralho adversário" : "Seu baralho"}: ${deck.player.deck.length} cartas`} onClick={!deck.enemy && p.canDraw ? p.onDraw : undefined} className="arena-deck-top" />
       <span className="arena-deck-count">BARALHO <b>{deck.player.deck.length}</b></span>
     </div> });
   });
@@ -142,11 +143,6 @@ function panels(p: BattlefieldProps): Panel[] {
     const last = g.cards[g.cards.length - 1];
     result.push({ id: `grave-${g.enemy}`, x: g.x, y: .05, z: g.z,
       content: last ? <ArenaCard card={last} onClick={() => p.onInspect?.(last, g.enemy)} /> : <div className="arena-grave-mark"><span>◇</span><small>CEMITÉRIO</small></div> });
-  });
-  if (p.drawEvent) p.drawEvent.cards.forEach((card, i) => {
-    const own = p.drawEvent?.owner === (p.viewer ?? 0);
-    result.push({ id: `draw-${p.drawEvent?.id}-${i}`, x: own ? 3.7 : -3.7, y: .28, z: own ? 2.5 : -2.5,
-      content: <div data-draw-order={i} className={`arena-drawn-card ${own ? "draw-to-own" : "draw-to-enemy"}`}><ArenaCard card={own ? card : null} hidden={!own} /></div> });
   });
   if (p.combat) {
     const event = p.combat;
@@ -289,5 +285,6 @@ export function Battlefield3D(p: BattlefieldProps) {
     {!ready && <div className="arena-loading"><CardBack /><span>PREPARANDO O CAMPO</span></div>}
     <div className="arena-row-label enemy-label">MONSTROS · OPONENTE</div>
     <div className="arena-row-label own-label">MAGIAS & ARMADILHAS</div>
+    {p.drawEvent && <DrawFlight key={p.drawEvent.id} event={p.drawEvent} viewer={p.viewer ?? 0} />}
   </div>;
 }

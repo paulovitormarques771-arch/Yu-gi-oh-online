@@ -521,6 +521,11 @@
 .arena-taking-damage .arena-dashboard { animation: arena-impact-shake .55s linear; }
 .arena-drawn-card { pointer-events: none; animation: draw-card-travel 1.7s ease-in-out both; }
 .arena-drawn-card[data-draw-order="1"] { animation-delay: .15s; }
+.arena-draw-flight { position: fixed; inset: 0; pointer-events: none; z-index: 54; perspective: 900px; }
+.arena-flight-card { position: absolute; top: 0; left: 0; width: 72px; height: 104px; transform-style: preserve-3d; opacity: 0; }
+.arena-flight-front, .arena-flight-back { position: absolute; inset: 0; backface-visibility: hidden; border: 1px solid var(--gold); }
+.arena-flight-back { transform: rotateY(180deg); }
+.arena-flight-front img { width: 100%; height: 100%; object-fit: fill; }
 .draw-to-enemy { animation-name: draw-card-travel-enemy; }
 .trap-confirm-overlay { position: fixed; inset: 0; z-index: 60; background: var(--arena-setup-shade); }
 .trap-confirm { position: fixed; z-index: 61; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(740px, calc(100% - 32px)); max-height: calc(100svh - 32px); overflow: auto; padding: 32px; border: 2px solid var(--magic); border-radius: 8px; background: var(--arena-panel-gradient); text-align: center; box-shadow: var(--glow-magic); }
@@ -559,6 +564,7 @@
   .card-bolt, .arena-sword-cut::before, .arena-sword-cut::after, .arena-duel-opening { animation: none; }
   .arena-taking-damage .arena-dashboard, .arena-drawn-card, .arena-lp-sword, .arena-hud-sword { animation: none; }
   .arena-drawn-card { display: none; }
+  .arena-draw-flight { display: none; }
   .card-bolt { opacity: .5; }
   .arena-sword-cut::before, .arena-sword-cut::after { transform: rotate(-38deg); opacity: .5; }
 }

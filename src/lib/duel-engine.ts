@@ -15,7 +15,7 @@ export interface FieldSpell { uid: string; card: CardData; faceDown: boolean; se
 export interface PlayerState {
   name: string; lp: number; deck: { uid: string; card: CardData }[]; hand: { uid: string; card: CardData }[];
   monsters: (FieldMonster | null)[]; spells: (FieldSpell | null)[]; graveyard: CardData[]; normalSummoned: boolean;
-  fieldSpell?: FieldSpell | null; extraDeck?: CardData[];
+  fieldSpell?: FieldSpell | null; extraDeck?: CardData[]; properlySummoned?: number[];
 }
 export type EffectChoice = { owner: PlayerId; zone: "monster" | "spell" | "graveyard" | "field" | "deck" | "extra" | "hand"; uid?: string; index?: number };
 export type AttackContext = { owner: PlayerId; attackerUid: string; targetUid?: string };
@@ -129,7 +129,7 @@ export function effectChoices(s: DuelState, owner: PlayerId, card: CardData, sou
     if (target === "monster" || target === "enemyMonster" && p !== owner || target === "ownMonster" && p === owner)
       s.players[p].monsters.forEach((m) => { if (m && (card.id !== 40619825 || !m.faceDown) && !(card.id === 54652250 && m.uid === sourceUid)) list.push({ owner: p, zone: "monster", uid: m.uid }); });
     if (target === "graveMonster" || target === "graveSpell" && p === owner) s.players[p].graveyard.forEach((c, i) => {
-      if (target === "graveMonster" && c.kind === "monster" && !/Fusion|Ritual/.test(c.type ?? "") || target === "graveSpell" && c.kind === "spell") list.push({ owner: p, zone: "graveyard", index: i });
+      if (target === "graveMonster" && c.kind === "monster" && c.id !== 35803249 && (!/Fusion|Ritual/.test(c.type ?? "") || s.players[p].properlySummoned?.includes(c.id)) || target === "graveSpell" && c.kind === "spell") list.push({ owner: p, zone: "graveyard", index: i });
     });
     if (target === "spellTrap" && (card.id !== 60082869 || p !== owner)) {
       s.players[p].spells.forEach((spell) => { if (spell && spell.uid !== sourceUid) list.push({ owner: p, zone: "spell", uid: spell.uid }); });
