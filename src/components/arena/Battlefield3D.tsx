@@ -13,7 +13,7 @@ import { rareCard } from "@/lib/duel-setup";
 import { rareAttackPath, rareProfile } from "@/lib/rare-vfx";
 import { FieldScenery3D } from "@/components/arena/FieldScenery3D";
 import { SpellCinematic3D } from "@/components/arena/SpellCinematic3D";
-import { FIELD_THEMES } from "@/lib/field-spells";
+import { activeField, FIELD_THEMES } from "@/lib/field-spells";
 import type { DrawEvent, SpellEvent } from "@/lib/spell-cinematics";
 
 export type BattlefieldProps = {
@@ -235,7 +235,7 @@ function Scene({ onReady, reduced, panelList, panelRefs, ...p }: BattlefieldProp
     <Environment resolution={64}><Lightformer intensity={2} position={[0, 5, 0]} scale={[10, 10, 1]} /><Lightformer intensity={1} color={colors.cyan} position={[-5, 1, -1]} rotation-y={Math.PI / 2} scale={[20, 1, 1]} /></Environment>
     <mesh position={[0, -.17, 0]}><boxGeometry args={[8.65, .3, 7.48]} /><meshStandardMaterial color={colors.edge} metalness={.7} roughness={.35} /></mesh>
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -.008, 0]}><planeGeometry args={[8.56, 7.4]} /><meshStandardMaterial map={surface} metalness={.4} roughness={.65} /></mesh>
-    {(() => { const field = [p.me.fieldSpell, p.opponent.fieldSpell].filter((f) => f && !f.faceDown).at(-1); const theme = field ? FIELD_THEMES[field.card.id] : undefined; return theme ? <FieldScenery3D key={field?.uid} theme={theme} colors={colors} reduced={reduced} /> : null; })()}
+    {(() => { const field = activeField([p.me.fieldSpell, p.opponent.fieldSpell]); const theme = field ? FIELD_THEMES[field.card.id] : undefined; return theme ? <FieldScenery3D key={field?.uid} theme={theme} colors={colors} reduced={reduced} /> : null; })()}
     {[-1, 1].map((n) => <group key={n}>
       <mesh position={[n * 4.28, .01, 0]}><boxGeometry args={[.035, .025, 7.4]} /><meshBasicMaterial color={n < 0 ? colors.cyan : colors.green} toneMapped={false} /></mesh>
       <mesh position={[0, .01, n * 3.7]}><boxGeometry args={[8.6, .025, .035]} /><meshBasicMaterial color={n < 0 ? colors.cyan : colors.green} toneMapped={false} /></mesh>
@@ -275,9 +275,9 @@ export function Battlefield3D(p: BattlefieldProps) {
     const update = () => setReduced(media.matches); update(); media.addEventListener("change", update);
     return () => media.removeEventListener("change", update);
   }, []);
-  const activeField = [p.me.fieldSpell, p.opponent.fieldSpell].filter((f) => f && !f.faceDown).at(-1);
+  const field = activeField([p.me.fieldSpell, p.opponent.fieldSpell]);
   return <div className={cn("battlefield-scene", p.preview && "battlefield-preview")} data-scene-ready={ready ? "1" : undefined}
-    data-field-theme={activeField ? FIELD_THEMES[activeField.card.id] : undefined} data-spell-cinematic={p.spellEvent?.kind}
+    data-field-theme={field ? FIELD_THEMES[field.card.id] : undefined} data-spell-cinematic={p.spellEvent?.kind}
     data-rare-strike={path && p.combat?.attackerCard ? rareProfile(p.combat.attackerCard).strike : undefined}
     data-rare-source={path?.source.join(",")} data-rare-target={path?.target.join(",")}>
     <Canvas camera={{ fov: 40, near: .1, far: 60 }} dpr={[1, 2]} frameloop={reduced ? "demand" : "always"} gl={{ alpha: true, antialias: true }}>

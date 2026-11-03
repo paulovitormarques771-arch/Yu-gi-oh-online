@@ -47,8 +47,8 @@ function candidates(s: DuelState): Action[] {
   if (s.phase === "main1" || s.phase === "main2") {
     for (const h of p.hand) {
       if (h.card.kind === "monster") {
-        if (p.normalSummoned || /Fusion|Ritual/.test(h.card.type ?? "")) continue;
-        const tr = combinations(p.monsters.flatMap((m) => m ? [m.uid] : []), tributesNeeded(h.card.level));
+        if (p.normalSummoned && h.card.id !== 35803249 || /Fusion|Ritual/.test(h.card.type ?? "")) continue;
+        const tr = h.card.id === 35803249 ? p.monsters.flatMap((m) => m?.card.id === 77585513 && !m.faceDown ? [[m.uid]] : []) : combinations(p.monsters.flatMap((m) => m ? [m.uid] : []), tributesNeeded(h.card.level));
         for (const tributes of tr) { actions.push({ type: "summon", handUid: h.uid, tributes, actor }, { type: "summon", handUid: h.uid, tributes, set: true, actor }); }
       } else {
         if (h.card.kind === "spell" && effectFor(h.card)?.timing === "main") actions.push({ type: "activateSpell", handUid: h.uid, actor });
@@ -56,6 +56,7 @@ function candidates(s: DuelState): Action[] {
       }
     }
     for (const m of p.monsters) if (m && m.summonedTurn !== s.turn && !m.attacked) actions.push({ type: "changePosition", uid: m.uid, actor });
+    for (const m of p.monsters) if (m?.card.id === 35803249 && !m.faceDown && m.effectUsedTurn !== s.turn) actions.push({type: "activateMonster", uid: m.uid, actor});
     for (const spell of [...p.spells, p.fieldSpell]) if (spell?.faceDown && spell.card.kind === "spell" && effectFor(spell.card)?.timing === "main") actions.push({ type: "activateField", uid: spell.uid, actor });
   }
   if (s.phase === "battle") for (const m of p.monsters) {

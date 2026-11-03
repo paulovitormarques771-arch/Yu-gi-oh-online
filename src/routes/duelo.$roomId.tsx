@@ -119,8 +119,9 @@ function Arena({ online, selection, onPrepare }: { online?: OnlineSeat; selectio
   const selMonster = me.monsters.find((m) => m?.uid === sel);
   const selSpell = me.fieldSpell?.uid === sel ? me.fieldSpell : me.spells.find((m) => m?.uid === sel);
   const activateReady = playable && !s.pending && main && (selHand?.card.kind === "spell" && effectFor(selHand.card)?.timing === "main" || selSpell?.card.kind === "spell" && selSpell.faceDown && effectFor(selSpell.card)?.timing === "main");
-  const need = selHand?.card.kind === "monster" ? tributesNeeded(selHand.card.level) : 0;
-  const canSummon = playable && !s.pending && main && !!selHand && selHand.card.kind === "monster" && !me.normalSummoned && tributes.length === need && (me.monsters.some((m) => !m) || need > 0) && !/Fusion|Ritual/.test(selHand.card.type ?? "");
+  const specialJinzo = selHand?.card.id === 35803249;
+  const need = selHand?.card.kind === "monster" ? specialJinzo ? 1 : tributesNeeded(selHand.card.level) : 0;
+  const canSummon = playable && !s.pending && main && !!selHand && selHand.card.kind === "monster" && (!me.normalSummoned || specialJinzo) && tributes.length === need && (!specialJinzo || tributes.every((uid) => me.monsters.some((m) => m?.uid === uid && m.card.id === 77585513 && !m.faceDown))) && (me.monsters.some((m) => !m) || need > 0) && !/Fusion|Ritual/.test(selHand.card.type ?? "");
   const canSet = playable && !s.pending && main && !!selHand && (selHand.card.kind === "monster" ? canSummon : isFieldSpell(selHand.card) || me.spells.some((m) => !m));
   const attackReady = playable && !!selMonster && canAttack(s, selMonster) && (!opponent.monsters.some(Boolean) || !!target);
   const attackers = playable && !s.pending ? me.monsters.flatMap((m) => m && canAttack(s, m) ? [m.uid] : []) : [];
@@ -190,7 +191,7 @@ function Arena({ online, selection, onPrepare }: { online?: OnlineSeat; selectio
   };
   const inspect = (card: CardData, enemy = false) => setZoom({ card, owner: enemy ? opponent.name : me.name });
   const attack = () => { if (selMonster && attackReady) act({ type: "attack", attackerUid: selMonster.uid, ...(target ? { targetUid: target } : {}) }); };
-  const summon = (defense = false) => { if (selHand && canSummon) act({ type: "summon", handUid: selHand.uid, tributes, set: defense }); };
+  const summon = (defense = false) => { if (selHand && canSummon && !(specialJinzo && defense)) act({ type: "summon", handUid: selHand.uid, tributes, set: defense }); };
   const replay = (level = difficulty) => {
     if (online) { if (online.seat === 0) void supabase.from("duel_rooms").update({ state: { kind: "setup", decks: [null, null] } as unknown as Json, status: "ready" }).eq("id", online.roomId).then(({ error }) => { if (error) toast.error("Não foi possível preparar a revanche."); }); return; }
     if (onPrepare) { onPrepare(level); return; }
@@ -209,7 +210,7 @@ function Arena({ online, selection, onPrepare }: { online?: OnlineSeat; selectio
     {selHand?.card.kind === "monster" ? <>
       <Button disabled={!canSummon} onClick={() => summon()}><Sparkles />Invocar</Button>
       {need > 0 && !canSummon && <Button variant="outline" onClick={() => { setZoom(null); setTributeMode(true); }}><Circle />Sacrificar monstros ({tributes.length}/{need})</Button>}
-      <Button variant="outline" disabled={!canSummon} onClick={() => summon(true)}><Shield />Baixar em defesa</Button>
+      <Button variant="outline" disabled={!canSummon || specialJinzo} onClick={() => summon(true)}><Shield />Baixar em defesa</Button>
     </> : <>
       {selHand?.card.kind === "spell" && <Button disabled={!activateReady} onClick={activate}><Zap />Ativar</Button>}
       <Button variant="outline" disabled={!canSet} onClick={() => { if (selHand) act({ type: "setSpell", handUid: selHand.uid }); }}><Layers />Baixar</Button>
@@ -289,7 +290,8 @@ function Arena({ online, selection, onPrepare }: { online?: OnlineSeat; selectio
               {s.phase === "draw" && <Button className="arena-action arena-action-main" disabled={!playable} onClick={() => act({ type: "draw" })}><Layers />Comprar carta</Button>}
               <Button className="arena-action arena-action-main" disabled={!playable || !!s.pending || s.phase === "draw"} onClick={() => { commit(finishTurn(s)); setSel(null); setTarget(null); setTributes([]); setZoom(null); }}><ArrowRight />Fim de Turno</Button>
               <Button className={`arena-action arena-summon-action ${canSummon ? "arena-summon-ready" : ""}`} disabled={!canSummon} onClick={() => summon()}><Sparkles />{canSummon ? "INVOCAR MONSTRO" : "Invocar monstro"}</Button>
-              {need > 0 && <Button className="arena-action" disabled={!playable || !!s.pending || !main || me.normalSummoned} onClick={() => { setZoom(null); setTributeMode(true); setAttackStep(null); }}><Circle />Sacrificar ({tributes.length}/{need})</Button>}
+              {need > 0 && <Button className="arena-action" disabled={!playable || !!s.pending || !main || me.normalSummoned && !specialJinzo} onClick={() => { setZoom(null); setTributeMode(true); setAttackStep(null); }}><Circle />{specialJinzo ? "Oferecer Jinzo" : "Sacrificar"} ({tributes.length}/{need})</Button>}
+              {selMonster?.card.id === 35803249 && <Button className="arena-action" disabled={!playable || !main || !!s.pending || selMonster.faceDown || selMonster.effectUsedTurn === s.turn} onClick={() => act({type: "activateMonster", uid: selMonster.uid})}><Zap />Efeito de Jinzo - Lord</Button>}
               <Button className="arena-action" disabled={!activateReady} onClick={activate}><Zap />Ativar</Button>
               <Button className="arena-action" disabled={attackStep === "target" ? !attackReady : !attackers.length} onClick={attackStep === "target" ? attack : beginAttack}><Swords />{attackStep === "target" ? target ? "Confirmar ataque" : "Atacar LP diretamente" : "Atacar"}</Button>
               <Button className="arena-action" disabled={!canSet} onClick={() => { if (!selHand) return; if (selHand.card.kind === "monster") summon(true); else act({ type: "setSpell", handUid: selHand.uid }); }}><Shield />Baixar carta</Button>

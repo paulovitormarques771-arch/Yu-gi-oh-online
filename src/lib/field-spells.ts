@@ -7,6 +7,9 @@ export const FIELD_THEMES: Record<number, FieldTheme> = {
 };
 export const isFieldSpell = (card: CardData) => card.kind === "spell" && (card.race === "Field" || FIELD_THEMES[card.id] !== undefined);
 export const fieldIndestructible = (card: CardData) => card.id === 48179391;
+export function activeField<T extends { card: CardData; faceDown: boolean; activatedOrder?: number }>(fields: (T | null | undefined)[]) {
+  return fields.filter((f): f is T => !!f && !f.faceDown).sort((a, b) => (a.activatedOrder ?? 0) - (b.activatedOrder ?? 0) || a.card.id - b.card.id).at(-1);
+}
 const terrain: Record<number, { up: string[]; down?: string[] }> = {
   22702055: { up: ["Fish", "Sea Serpent", "Thunder", "Aqua"], down: ["Machine", "Pyro"] },
   59197169: { up: ["Fiend", "Spellcaster"], down: ["Fairy"] },

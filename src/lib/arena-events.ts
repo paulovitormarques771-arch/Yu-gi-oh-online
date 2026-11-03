@@ -27,7 +27,7 @@ export function combatEvent(before: DuelState, after: DuelState, id: number): Co
     return amount > 0 ? [{ owner, amount }] : [];
   });
   const destroyed = ([0, 1] as const).flatMap((owner) => before.players[owner].monsters.flatMap((m, index) => {
-    if (!m || after.players[owner].monsters.some((n) => n?.uid === m.uid)) return [];
+    if (!m || after.players.some((p) => p.monsters.some((n) => n?.uid === m.uid))) return [];
     // Face-down identities remain private even when a tribute/destroy effect removes them.
     if (m.faceDown) return [];
     return [{ uid: m.uid, owner, card: m.card, index }];

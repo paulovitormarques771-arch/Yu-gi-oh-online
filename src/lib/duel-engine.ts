@@ -10,8 +10,8 @@ export const MONSTER_ZONES = 5;
 export const SPELL_ZONES = 5;
 export type Phase = "draw" | "main1" | "battle" | "main2" | "end";
 export type PlayerId = 0 | 1;
-export interface FieldMonster { uid: string; card: CardData; position: "atk" | "def"; faceDown: boolean; attacked: boolean; summonedTurn: number; boost?: number; returnOwner?: PlayerId; returnTurn?: number }
-export interface FieldSpell { uid: string; card: CardData; faceDown: boolean; setTurn?: number; targetUid?: string; targetOwner?: PlayerId; expiresTurn?: number }
+export interface FieldMonster { uid: string; card: CardData; position: "atk" | "def"; faceDown: boolean; attacked: boolean; summonedTurn: number; boost?: number; returnOwner?: PlayerId; returnTurn?: number; effectUsedTurn?: number }
+export interface FieldSpell { uid: string; card: CardData; faceDown: boolean; setTurn?: number; targetUid?: string; targetOwner?: PlayerId; expiresTurn?: number; activatedOrder?: number }
 export interface PlayerState {
   name: string; lp: number; deck: { uid: string; card: CardData }[]; hand: { uid: string; card: CardData }[];
   monsters: (FieldMonster | null)[]; spells: (FieldSpell | null)[]; graveyard: CardData[]; normalSummoned: boolean;
@@ -29,6 +29,7 @@ type Move =
   | { type: "setSpell"; handUid: string }
   | { type: "activateSpell"; handUid: string }
   | { type: "activateField"; uid: string }
+  | { type: "activateMonster"; uid: string }
   | { type: "resolveEffect"; choice: EffectChoice }
   | { type: "cancelEffect" } | { type: "passResponse" }
   | { type: "changePosition"; uid: string }
@@ -205,7 +206,7 @@ function consumeEffectSource(s: DuelState, owner: PlayerId, card: CardData, sour
     if (sourceZone === "hand") { const index = p.hand.findIndex((h) => h.uid === sourceUid); if (index < 0) fail("Carta não está mais na mão."); p.hand.splice(index, 1); }
     else if (sourceZone === "spell") { const index = p.spells.findIndex((h) => h?.uid === sourceUid); if (index < 0) fail("Carta não está mais no campo."); p.spells[index] = null; }
     if (p.fieldSpell?.uid !== sourceUid) destroyField(s, owner, true);
-    p.fieldSpell = { uid: sourceUid, card, faceDown: false }; return;
+    p.fieldSpell = { uid: sourceUid, card, faceDown: false, activatedOrder: (s.lastEffect?.sequence ?? 0) + 1 }; return;
   }
   if (sourceZone === "hand") {
     const index = p.hand.findIndex((h) => h.uid === sourceUid); if (index < 0) fail("Carta não está mais na mão.");
@@ -314,7 +315,7 @@ export function applyAction(state: DuelState, action: Action): DuelState {
     if (pending.kind === "effect") {
       if (action.type === "cancelEffect") {
         if (pending.sourceZone === "monster") fail("O efeito de virar deve ser resolvido.");
-        s.pending = null; return s;
+        s.pending = null; if (pending.afterAttack) resolveBattle(s, pending.afterAttack); return s;
       }
       if (action.type !== "resolveEffect") fail("Escolha o alvo do efeito primeiro.");
       if (pending.stage === "cost") {
@@ -367,18 +368,22 @@ export function applyAction(state: DuelState, action: Action): DuelState {
       return s;
     }
     case "summon": {
-      if (!mainPhase(s)) fail("Invoque apenas nas Fases Principais."); if (me.normalSummoned) fail("Você já fez uma Invocação Normal neste turno.");
+      if (!mainPhase(s)) fail("Invoque apenas nas Fases Principais.");
       const index = me.hand.findIndex((h) => h.uid === action.handUid), h = me.hand[index]; if (!h || h.card.kind !== "monster") fail("Carta inválida.");
+      const specialJinzo = h.card.id === 35803249;
+      if (!specialJinzo && me.normalSummoned) fail("Você já fez uma Invocação Normal neste turno.");
+      if (specialJinzo && action.set) fail("Jinzo - Lord não pode ser baixado.");
       if (/Fusion|Ritual/.test(h.card.type ?? "")) fail("Monstros de Fusão/Ritual não podem ser Invocados normalmente.");
-      const need = tributesNeeded(h.card.level), tr = action.tributes ?? [];
+      const need = specialJinzo ? 1 : tributesNeeded(h.card.level), tr = action.tributes ?? [];
       if (tr.length !== need) fail(`Este monstro exige ${need} sacrifício(s).`);
       if (new Set(tr).size !== tr.length) fail("Cada sacrifício deve ser um monstro diferente.");
       const indices = tr.map((id) => me.monsters.findIndex((m) => m?.uid === id)); if (indices.some((i) => i < 0)) fail("Sacrifício inválido.");
+      if (specialJinzo && !indices.every((i) => me.monsters[i]?.card.id === 77585513 && !me.monsters[i]?.faceDown)) fail("Envie 1 Jinzo com a face para cima ao Cemitério.");
       if (!need && !me.monsters.some((m) => m === null)) fail("Sem zona de monstro livre.");
       indices.forEach((i) => destroyMonster(s, actor, i));
       const zone = me.monsters.findIndex((m) => m === null); if (zone < 0) fail("Sem zona de monstro livre.");
       me.hand.splice(index, 1); me.monsters[zone] = { uid: h.uid, card: h.card, position: action.set ? "def" : "atk", faceDown: !!action.set, attacked: false, summonedTurn: s.turn };
-      me.normalSummoned = true; s.log.push(action.set ? `${me.name} baixou um monstro.` : `${me.name} invocou ${h.card.name}.`);
+      if (!specialJinzo) me.normalSummoned = true; s.log.push(action.set ? `${me.name} baixou um monstro.` : `${me.name} invocou ${h.card.name}.`);
       if (!action.set) {
         const slifer = s.players[enemy].monsters.some((m) => m?.card.id === 10000020 && !m.faceDown);
         if (slifer) { const m = me.monsters[zone]; if (m) { m.boost = -2000; if (monsterAtk(s, actor, m) <= 0) destroyMonster(s, actor, zone); } }
@@ -402,6 +407,15 @@ export function applyAction(state: DuelState, action: Action): DuelState {
       if (!mainPhase(s)) fail("Ative esta magia nas Fases Principais."); const spell = me.fieldSpell?.uid === action.uid ? me.fieldSpell : me.spells.find((x) => x?.uid === action.uid);
       if (!spell || !spell.faceDown || spell.card.kind !== "spell") fail("Esta carta não pode ser ativada agora.");
       if (effectFor(spell.card)?.timing !== "main") fail("O efeito desta carta ainda não foi implementado."); startEffect(s, actor, spell.card, spell.uid, me.fieldSpell?.uid === spell.uid ? "field" : "spell"); return s;
+    }
+    case "activateMonster": {
+      const m = me.monsters.find((m) => m?.uid === action.uid);
+      if (!mainPhase(s) || !m || m.faceDown || m.card.id !== 35803249 || m.effectUsedTurn === s.turn) fail("Efeito de monstro indisponível.");
+      let destroyed = 0;
+      for (const owner of [0, 1] as const) s.players[owner].spells.forEach((spell, i) => { if (spell && !spell.faceDown && spell.card.kind === "trap") { destroySpell(s, owner, i); destroyed++; } });
+      m.effectUsedTurn = s.turn; s.players[enemy].lp -= destroyed * 300;
+      s.lastEffect = { sequence: (s.lastEffect?.sequence ?? 0) + 1, owner: actor, card: m.card };
+      s.log.push(`${me.name} ativou ${m.card.name}: ${destroyed * 300} de dano.`); checkWin(s); return s;
     }
     case "changePosition": {
       if (!mainPhase(s)) fail("Mude posições nas Fases Principais."); const m = me.monsters.find((x) => x?.uid === action.uid); if (!m) fail("Monstro inválido.");

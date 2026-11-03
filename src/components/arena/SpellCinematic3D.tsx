@@ -9,7 +9,8 @@ export function SpellCinematic3D({ event, viewer, colors: c, reduced }: { event:
   const start = useRef(performance.now());
   const { kind } = event;
   const own = event.owner === viewer;
-  const targetZ = event.targetOwner === undefined ? own ? -1.02 : 1.02 : event.targetOwner === viewer ? 1.02 : -1.02;
+  const defensive = ["mirror", "cylinder", "armor", "javelin", "negate"].includes(kind);
+  const targetZ = event.targetOwner === undefined ? own === defensive ? 1.02 : -1.02 : event.targetOwner === viewer ? 1.02 : -1.02;
   const x = event.targetIndex === undefined ? 0 : (event.targetIndex - 2) * 1.17;
   const vortex = ["blackhole", "tornado", "negate", "storm", "fusion"].includes(kind);
   const color = ["reborn", "javelin", "swords"].includes(kind) ? c.gold : kind === "fusion" || kind === "negate" || kind === "control" ? c.magic : c.cyan;
