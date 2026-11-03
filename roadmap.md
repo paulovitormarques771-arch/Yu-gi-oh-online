@@ -8,13 +8,13 @@
 - [ ] Etapa 7: animações, recursos visuais e acabamento
 
 ## Pedido atual
-- [ ] Confirmar combate ATK igual e três comparações contra DEF com testes concretos.
-- [ ] Espada nos LP, tremor, ATK aumentado em cor distinta e hologramas mais nítidos/personalizados.
-- [ ] Zona de campo, proteção do Selo e cenários 3D para os nove campos pedidos.
-- [ ] Corrigir renascimento, implementar efeitos/custos/alvos das magias e armadilhas solicitadas e confirmação grande.
-- [ ] Cinemáticas de efeitos e compra física do baralho à mão.
-- [ ] Garantir os nove monstros pedidos e raridade de Jinzo/Jinzo - Lord.
-- [ ] Validar regras/efeitos com testes e fluxo real de arena, incluindo cenários e respostas.
+- [x] Confirmar combate ATK igual e três comparações contra DEF com testes concretos.
+- [x] Espada nos LP, tremor, ATK aumentado em cor distinta e hologramas mais nítidos; perfis individuais derivados de famílias 3D originais, não réplicas oficiais de cada monstro.
+- [x] Zona de campo, proteção do Selo e cenários 3D estilizados para Orichalcos, Toon, Umi, Yami, Wasteland, Mountain, Forest e Sogen.
+- [x] Renascimento, efeitos/custos/alvos das magias e armadilhas solicitadas e confirmação grande; fusões limitadas às receitas clássicas explicitamente cadastradas, Super Polimerização ativada nas fases principais.
+- [x] Cinemáticas de efeitos e voo do baralho à posição real da mão; movimento do voo e sensação do tremor ainda dependem de conferência em aparelho real.
+- [x] Garantir os nove monstros pedidos e raridade de Jinzo/Jinzo - Lord; invocação especial e efeito de Lord validados.
+- [x] 117 testes passaram; coleção autenticada, campo, renascimento, resposta ao ataque de IA, dano, Jinzo Lord e todos os temas conferidos no navegador, sem erros; celular sem transbordamento. Fluidez real não medida.
 - [x] Substituir brilho/foil por raios emitidos pelas cartas raras.
 - [x] Hologramas 3D originais emergindo da carta, com sopro, fogo, magia, raios solares ou soco conforme o monstro, até o alvo real. Novas artes específicas não geradas por falta de créditos de construção.
 - [x] Verificar raios, ataques a monstros/LP e privacidade em telas grandes/pequenas; 74 testes passaram.
