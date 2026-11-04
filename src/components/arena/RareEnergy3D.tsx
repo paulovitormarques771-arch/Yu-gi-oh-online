@@ -59,11 +59,12 @@ export function RareEnergy3D({ x, z, colors, card, reduced, burst = false, attac
     strike.current = f.strike;
     if (model.current) {
       const emergence = attack || burst ? f.emerge : 1;
-      model.current.scale.setScalar((.08 + emergence * .92) * (attack ? 1.25 : 1));
+      const art = !!HOLO_ART[card.id];
+      model.current.scale.setScalar((.08 + emergence * .92) * (attack ? 1.25 : art && !burst ? .62 : 1));
       const travel = profile.strike === "punch" ? f.strike * .8 : profile.model === "dragon" ? f.strike * .2 : 0;
       model.current.position.set(attack ? dx * travel : 0, attack || burst ? -.15 + emergence * .35 : .1, attack ? dz * travel : 0);
       model.current.rotation.y = HOLO_ART[card.id] ? 0 : attack ? Math.atan2(dx, dz) : direction < 0 ? Math.PI : 0;
-      model.current.visible = (attack || burst) && (reduced || f.fade > 0);
+      model.current.visible = art ? true : (attack || burst) && (reduced || f.fade > 0);
     }
     if (projectile.current) {
       projectile.current.visible = attack && (reduced || f.projectile) && profile.strike !== "punch";
@@ -87,7 +88,7 @@ export function RareEnergy3D({ x, z, colors, card, reduced, burst = false, attac
   });
   return <group position={[x, .08, z]}>
     <Lightning color={color} reduced={reduced} intense={burst || attack} />
-    <group ref={model} visible={attack || burst} rotation={[0, direction < 0 ? Math.PI : 0, 0]}>
+    <group ref={model} visible={attack || burst || !!HOLO_ART[card.id]} rotation={[0, direction < 0 ? Math.PI : 0, 0]}>
       <pointLight position={[0, 2, 1]} intensity={3} color={colors.foreground} distance={4} />
       {HOLO_ART[card.id] ? <Suspense fallback={null}><HoloArt3D art={HOLO_ART[card.id]!} color={color} reduced={reduced} attacking={attack} /></Suspense>
         : <HologramMonster3D profile={profile} color={color} core={colors.foreground} attacking={attack} reduced={reduced} strike={strike} />}
