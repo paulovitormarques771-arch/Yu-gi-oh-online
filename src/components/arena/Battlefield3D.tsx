@@ -50,8 +50,8 @@ function CameraRig() {
   const { camera, size } = useThree();
   useEffect(() => {
     const aspect = size.width / size.height;
-    const distance = Math.max(.7, 1.08 / aspect);
-    camera.position.set(0, 9.2 * distance, 7.4 * distance);
+    const distance = Math.max(.78, 1.17 / aspect);
+    camera.position.set(0, 9.9 * distance, 8.1 * distance);
     camera.lookAt(0, 0, 0.1);
     camera.updateProjectionMatrix();
   }, [camera, size]);
