@@ -1,5 +1,6 @@
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { Suspense, useMemo, useRef } from "react";
+import { HOLO_ART, HoloArt3D } from "@/components/arena/HoloArt3D";
 import { Vector3, type Group, type Mesh } from "three";
 import type { CardData } from "@/data/catalog";
 import { HologramMonster3D } from "@/components/arena/HologramMonster3D";
@@ -61,7 +62,7 @@ export function RareEnergy3D({ x, z, colors, card, reduced, burst = false, attac
       model.current.scale.setScalar((.08 + emergence * .92) * (attack ? 1.25 : 1));
       const travel = profile.strike === "punch" ? f.strike * .8 : profile.model === "dragon" ? f.strike * .2 : 0;
       model.current.position.set(attack ? dx * travel : 0, attack || burst ? -.15 + emergence * .35 : .1, attack ? dz * travel : 0);
-      model.current.rotation.y = attack ? Math.atan2(dx, dz) : direction < 0 ? Math.PI : 0;
+      model.current.rotation.y = HOLO_ART[card.id] ? 0 : attack ? Math.atan2(dx, dz) : direction < 0 ? Math.PI : 0;
       model.current.visible = (attack || burst) && (reduced || f.fade > 0);
     }
     if (projectile.current) {
@@ -88,7 +89,8 @@ export function RareEnergy3D({ x, z, colors, card, reduced, burst = false, attac
     <Lightning color={color} reduced={reduced} intense={burst || attack} />
     <group ref={model} visible={attack || burst} rotation={[0, direction < 0 ? Math.PI : 0, 0]}>
       <pointLight position={[0, 2, 1]} intensity={3} color={colors.foreground} distance={4} />
-      <HologramMonster3D profile={profile} color={color} core={colors.foreground} attacking={attack} reduced={reduced} strike={strike} />
+      {HOLO_ART[card.id] ? <Suspense fallback={null}><HoloArt3D art={HOLO_ART[card.id]!} color={color} reduced={reduced} attacking={attack} /></Suspense>
+        : <HologramMonster3D profile={profile} color={color} core={colors.foreground} attacking={attack} reduced={reduced} strike={strike} />}
     </group>
     {attack && <>
       <group ref={projectile} visible={false}>

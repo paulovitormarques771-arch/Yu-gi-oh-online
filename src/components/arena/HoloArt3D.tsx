@@ -1,7 +1,7 @@
 import { useFrame } from "@react-three/fiber";
 import { useTexture } from "@react-three/drei";
 import { useRef } from "react";
-import { AdditiveBlending, DoubleSide, SRGBColorSpace, type Group, type Mesh, type MeshBasicMaterial } from "three";
+import { AdditiveBlending, DoubleSide, NormalBlending, SRGBColorSpace, type Group, type Mesh, type MeshBasicMaterial } from "three";
 import obelisk from "@/assets/holograms/obelisk.png.asset.json";
 import slifer from "@/assets/holograms/slifer.png.asset.json";
 import blueEyes from "@/assets/holograms/blue-eyes.png.asset.json";
@@ -56,6 +56,6 @@ export function SpellArt3D({ art, reduced }: { art: { url: string; w: number; h:
     if (mat.current && !reduced) mat.current.opacity = Math.max(0, Math.min(1, t * 3, (2.4 - t) * 2)) * (art.additive ? (.75 + Math.random() * .25) : .92);
   });
   return <group ref={g} position={[0, 2.2, 0]}>
-    <mesh><planeGeometry args={[art.w, art.h]} /><meshBasicMaterial ref={mat} map={tex} transparent opacity={.9} depthWrite={false} depthTest={false} toneMapped={false} blending={art.additive ? AdditiveBlending : undefined} /></mesh>
+    <mesh><planeGeometry args={[art.w, art.h]} /><meshBasicMaterial ref={mat} map={tex} transparent opacity={.9} depthWrite={false} depthTest={false} toneMapped={false} blending={art.additive ? AdditiveBlending : NormalBlending} /></mesh>
   </group>;
 }
