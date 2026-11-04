@@ -30,14 +30,14 @@ export function HoloArt3D({ art, color, reduced, attacking = false }: { art: { u
     const t = clock.elapsedTime;
     if (g.current) {
       g.current.quaternion.copy(camera.quaternion);
-      if (!reduced) g.current.position.y = art.h / 2 + .25 + Math.sin(t * 1.6) * .06 + (attacking ? Math.sin(t * 9) * .05 : 0);
+      if (!reduced) g.current.position.y = art.h / 2 + .95 + Math.sin(t * 1.6) * .06 + (attacking ? Math.sin(t * 9) * .05 : 0);
     }
     if (glow.current && !reduced) glow.current.opacity = .35 + Math.sin(t * 3) * .15;
     if (pillar.current && !reduced) pillar.current.rotation.y = t * .8;
   });
   return <group>
     <mesh ref={pillar} position={[0, art.h / 2, 0]}><cylinderGeometry args={[.32, .62, art.h + .4, 32, 1, true]} /><meshBasicMaterial color={color} transparent opacity={.14} side={DoubleSide} depthWrite={false} blending={AdditiveBlending} toneMapped={false} /></mesh>
-    <group ref={g} position={[0, art.h / 2 + .25, 0]}>
+    <group ref={g} position={[0, art.h / 2 + .95, 0]}>
       <mesh scale={1.06} position={[0, 0, -.01]}><planeGeometry args={[art.w, art.h]} /><meshBasicMaterial ref={glow} map={tex} color={color} transparent opacity={.4} blending={AdditiveBlending} depthWrite={false} toneMapped={false} /></mesh>
       <mesh><planeGeometry args={[art.w, art.h]} /><meshBasicMaterial map={tex} transparent alphaTest={.08} depthWrite={false} toneMapped={false} side={DoubleSide} /></mesh>
     </group>

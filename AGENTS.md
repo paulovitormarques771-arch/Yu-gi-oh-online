@@ -29,3 +29,4 @@
 - Fusion cards selected through the existing deck builder are separated into the extra deck at duel creation; only explicit recipes in `fusion-recipes.ts` execute, with discard selection validated in the reducer to avoid interpreting arbitrary card text.
 - Spell and draw cinematics consume sequenced reducer events in `spell-cinematics.ts`; terrain and spell scene modules are presentation-only, and opponent draw identities never enter DOM controls.
 - Catalog supplements and Portuguese text live in `classic-expansion.ts`, merged by ID without editing the upstream JSON; catalog rarity remains the single authority for lightning and unique hologram profiles.
+- Illustrated holograms (`HoloArt3D.tsx`) map card IDs to user-supplied cut-out art assets and float above the DOM card layer; cards without art keep procedural `HologramMonster3D` — DOM cards cover the canvas, so holograms must sit above them.
