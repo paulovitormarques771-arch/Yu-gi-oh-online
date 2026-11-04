@@ -48,7 +48,7 @@ function candidates(s: DuelState): Action[] {
     for (const h of p.hand) {
       if (h.card.kind === "monster") {
         if (p.normalSummoned && h.card.id !== 35803249 || /Fusion|Ritual/.test(h.card.type ?? "")) continue;
-        const tr = h.card.id === 35803249 ? p.monsters.flatMap((m) => m?.card.id === 77585513 && !m.faceDown ? [[m.uid]] : []) : combinations(p.monsters.flatMap((m) => m ? [m.uid] : []), tributesNeeded(summonLevel(s, me, h.card)));
+        const tr = h.card.id === 35803249 ? p.monsters.flatMap((m) => m?.card.id === 77585513 && !m.faceDown ? [[m.uid]] : []) : combinations(p.monsters.flatMap((m) => m ? [m.uid] : []), tributesNeeded(summonLevel(s, actor, h.card)));
         for (const tributes of tr) { actions.push({ type: "summon", handUid: h.uid, tributes, actor }, { type: "summon", handUid: h.uid, tributes, set: true, actor }); }
       } else {
         if (h.card.kind === "spell" && effectFor(h.card)?.timing === "main") actions.push({ type: "activateSpell", handUid: h.uid, actor });
