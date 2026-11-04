@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { OnlineRoom } from "@/components/arena/OnlineRoom";
 import { isRoomCode } from "@/lib/online-room";
 import type { Json } from "@/integrations/supabase/types";
-import { applyAction, availableResponses, canAttack, choiceCard, createDuel, decisionPlayer, monsterAtk, monsterDef, quickDeck, tributesNeeded, type Action, type DuelState, type PlayerId } from "@/lib/duel-engine";
+import { applyAction, availableResponses, canAttack, choiceCard, createDuel, decisionPlayer, monsterAtk, monsterDef, quickDeck, summonLevel, tributesNeeded, type Action, type DuelState, type PlayerId } from "@/lib/duel-engine";
 import { effectFor } from "@/lib/duel-effects";
 import { cardText } from "@/data/card-text";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -120,7 +120,7 @@ function Arena({ online, selection, onPrepare }: { online?: OnlineSeat; selectio
   const selSpell = me.fieldSpell?.uid === sel ? me.fieldSpell : me.spells.find((m) => m?.uid === sel);
   const activateReady = playable && !s.pending && main && (selHand?.card.kind === "spell" && effectFor(selHand.card)?.timing === "main" || selSpell?.card.kind === "spell" && selSpell.faceDown && effectFor(selSpell.card)?.timing === "main");
   const specialJinzo = selHand?.card.id === 35803249;
-  const need = selHand?.card.kind === "monster" ? specialJinzo ? 1 : tributesNeeded(selHand.card.level) : 0;
+  const need = selHand?.card.kind === "monster" ? specialJinzo ? 1 : tributesNeeded(summonLevel(s, view, selHand.card)) : 0;
   const canSummon = playable && !s.pending && main && !!selHand && selHand.card.kind === "monster" && (!me.normalSummoned || specialJinzo) && tributes.length === need && (!specialJinzo || tributes.every((uid) => me.monsters.some((m) => m?.uid === uid && m.card.id === 77585513 && !m.faceDown))) && (me.monsters.some((m) => !m) || need > 0) && !/Fusion|Ritual/.test(selHand.card.type ?? "");
   const canSet = playable && !s.pending && main && !!selHand && (selHand.card.kind === "monster" ? canSummon : isFieldSpell(selHand.card) || me.spells.some((m) => !m));
   const attackReady = playable && !!selMonster && canAttack(s, selMonster) && (!opponent.monsters.some(Boolean) || !!target);
@@ -308,7 +308,7 @@ function Arena({ online, selection, onPrepare }: { online?: OnlineSeat; selectio
       </div>
       <footer className="arena-footer"><span>● {vsAI ? "TREINO CONTRA IA" : online ? "DUELO ONLINE" : "DUELO LOCAL"}</span><span>{aiTurn ? "TURNO DO OPONENTE" : `TURNO DE ${s.players[s.active].name.toUpperCase()}`}</span><span>DUEL ARENA · PROJETO DE FÃS</span></footer>
     </main>
-    <CardZoom card={zoom?.card ?? null} owner={zoom?.owner} onClose={() => setZoom(null)} actions={modalActions} />
+    <CardZoom base={zoom ? ALL_CARDS.find((c) => c.id === zoom.card.id) : undefined} card={zoom?.card ?? null} owner={zoom?.owner} onClose={() => setZoom(null)} actions={modalActions} />
     {s.pending?.kind === "response" && playable && <TrapConfirmation spells={availableResponses(s)} onActivate={(uid) => act({ type: "activateField", uid })} onPass={() => act({ type: "passResponse" })} />}
     {opening && <DuelOpening />}
     {s.winner === null && phaseNotice && <PhaseAnnouncement key={`${phaseNotice.turn}-${phaseNotice.label}`} {...phaseNotice} />}

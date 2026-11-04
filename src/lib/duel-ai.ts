@@ -1,5 +1,5 @@
 // Tactical training AI. All decisions pass through the existing rules reducer.
-import { applyAction, availableResponses, canAttack, monsterAtk, monsterDef, decisionPlayer, tributesNeeded, type Action, type DuelState, type PlayerId } from "@/lib/duel-engine";
+import { applyAction, availableResponses, canAttack, monsterAtk, monsterDef, decisionPlayer, summonLevel, tributesNeeded, type Action, type DuelState, type PlayerId } from "@/lib/duel-engine";
 import { effectFor } from "@/lib/duel-effects";
 import { emptyPlaystyle, type AIDifficulty, type PlaystyleProfile } from "@/lib/duel-training";
 
@@ -48,7 +48,7 @@ function candidates(s: DuelState): Action[] {
     for (const h of p.hand) {
       if (h.card.kind === "monster") {
         if (p.normalSummoned && h.card.id !== 35803249 || /Fusion|Ritual/.test(h.card.type ?? "")) continue;
-        const tr = h.card.id === 35803249 ? p.monsters.flatMap((m) => m?.card.id === 77585513 && !m.faceDown ? [[m.uid]] : []) : combinations(p.monsters.flatMap((m) => m ? [m.uid] : []), tributesNeeded(h.card.level));
+        const tr = h.card.id === 35803249 ? p.monsters.flatMap((m) => m?.card.id === 77585513 && !m.faceDown ? [[m.uid]] : []) : combinations(p.monsters.flatMap((m) => m ? [m.uid] : []), tributesNeeded(summonLevel(s, actor, h.card)));
         for (const tributes of tr) { actions.push({ type: "summon", handUid: h.uid, tributes, actor }, { type: "summon", handUid: h.uid, tributes, set: true, actor }); }
       } else {
         if (h.card.kind === "spell" && effectFor(h.card)?.timing === "main") actions.push({ type: "activateSpell", handUid: h.uid, actor });
@@ -158,11 +158,11 @@ function easyAction(s: DuelState): Action {
       const own = me.monsters.filter((m) => m !== null).sort((a, b) => monsterAtk(s, actor, a) - monsterAtk(s, actor, b));
       const playable = me.hand
         .filter((h) => h.card.kind === "monster" && !(h.card.type ?? "").match(/Fusion|Ritual/))
-        .filter((h) => tributesNeeded(h.card.level) <= own.length)
+        .filter((h) => tributesNeeded(summonLevel(s, actor, h.card)) <= own.length)
         .sort((a, b) => (b.card.atk ?? 0) - (a.card.atk ?? 0));
       const pick = playable[0];
       if (pick) {
-        const need = tributesNeeded(pick.card.level);
+        const need = tributesNeeded(summonLevel(s, actor, pick.card));
         const tributes = own.slice(0, need).map((m) => m.uid);
         const tribAtk = own.slice(0, need).reduce((t, m) => t + monsterAtk(s, actor, m), 0);
         if (need === 0 || (pick.card.atk ?? 0) > tribAtk) {

@@ -6,6 +6,7 @@ export interface EffectDefinition { operation: string; target: EffectTarget; tim
 
 /** Explicit rules by card ID. Text translations are never interpreted as executable code. */
 export const EFFECTS: Record<number, EffectDefinition> = {
+  23265313: { operation: "costDown", target: "none", timing: "main", discard: 1 },
   55144522: { operation: "draw", amount: 2, target: "none", timing: "main" },
   12580477: { operation: "destroyEnemy", target: "none", timing: "main" },
   53129443: { operation: "destroyAll", target: "none", timing: "main" },

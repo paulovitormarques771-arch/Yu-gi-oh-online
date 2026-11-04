@@ -15,7 +15,7 @@ export interface FieldSpell { uid: string; card: CardData; faceDown: boolean; se
 export interface PlayerState {
   name: string; lp: number; deck: { uid: string; card: CardData }[]; hand: { uid: string; card: CardData }[];
   monsters: (FieldMonster | null)[]; spells: (FieldSpell | null)[]; graveyard: CardData[]; normalSummoned: boolean;
-  fieldSpell?: FieldSpell | null; extraDeck?: CardData[]; properlySummoned?: number[];
+  fieldSpell?: FieldSpell | null; extraDeck?: CardData[]; properlySummoned?: number[]; levelDownTurn?: number;
 }
 export type EffectChoice = { owner: PlayerId; zone: "monster" | "spell" | "graveyard" | "field" | "deck" | "extra" | "hand"; uid?: string; index?: number };
 export type AttackContext = { owner: PlayerId; attackerUid: string; targetUid?: string };
@@ -38,6 +38,8 @@ type Move =
 export type Action = Move & { actor?: PlayerId };
 const other = (p: PlayerId): PlayerId => p === 0 ? 1 : 0;
 export const tributesNeeded = (level = 0) => level >= 8 ? 3 : level >= 6 ? 2 : level >= 5 ? 1 : 0;
+/** Reduzir Custos (Cost Down) lowers hand levels by 2 for the rest of the turn it resolves. */
+export const summonLevel = (s: DuelState, owner: PlayerId, card: CardData) => Math.max(1, (card.level ?? 0) - (s.players[owner].levelDownTurn === s.turn ? 2 : 0));
 function fail(message: string): never { throw new Error(message); }
 const mainPhase = (s: DuelState) => s.phase === "main1" || s.phase === "main2";
 export const decisionPlayer = (s: DuelState) => s.pending?.actor ?? s.active;
@@ -234,6 +236,7 @@ function resolveEffect(s: DuelState, owner: PlayerId, card: CardData, sourceUid:
   const index = choice?.uid ? s.players[choice.owner].monsters.findIndex((m) => m?.uid === choice.uid) : -1;
   switch (e.operation) {
     case "draw": drawCards(s, owner, e.amount ?? 0); break;
+    case "costDown": s.players[owner].levelDownTurn = s.turn; break;
     case "damage": s.players[enemy].lp -= e.amount ?? 0; break;
     case "heal": p.lp += e.amount ?? 0; break;
     case "destroyEnemy": s.players[enemy].monsters.forEach((_, i) => destroyMonster(s, enemy, i)); break;
@@ -374,7 +377,7 @@ export function applyAction(state: DuelState, action: Action): DuelState {
       if (!specialJinzo && me.normalSummoned) fail("Você já fez uma Invocação Normal neste turno.");
       if (specialJinzo && action.set) fail("Jinzo - Lord não pode ser baixado.");
       if (/Fusion|Ritual/.test(h.card.type ?? "")) fail("Monstros de Fusão/Ritual não podem ser Invocados normalmente.");
-      const need = specialJinzo ? 1 : tributesNeeded(h.card.level), tr = action.tributes ?? [];
+      const need = specialJinzo ? 1 : tributesNeeded(summonLevel(s, actor, h.card)), tr = action.tributes ?? [];
       if (tr.length !== need) fail(`Este monstro exige ${need} sacrifício(s).`);
       if (new Set(tr).size !== tr.length) fail("Cada sacrifício deve ser um monstro diferente.");
       const indices = tr.map((id) => me.monsters.findIndex((m) => m?.uid === id)); if (indices.some((i) => i < 0)) fail("Sacrifício inválido.");
