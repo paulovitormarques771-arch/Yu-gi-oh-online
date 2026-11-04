@@ -8,7 +8,7 @@ import { effectStatus } from "@/lib/duel-effects";
 const KIND_LABEL = { monster: "Monstro", spell: "Magia", trap: "Armadilha" } as const;
 
 /** Full-screen card viewer with large image and legible details. */
-export function CardZoom({ card, owner, onClose, actions }: { card: CardData | null; owner?: string | undefined; onClose: () => void; actions?: React.ReactNode }) {
+export function CardZoom({ card, base, owner, onClose, actions }: { card: CardData | null; base?: CardData | undefined; owner?: string | undefined; onClose: () => void; actions?: React.ReactNode }) {
   return <Dialog.Root open={!!card} onOpenChange={(open) => { if (!open) onClose(); }}>
     {card && <Dialog.Portal>
       <Dialog.Overlay className="fixed inset-0 z-50 bg-background/85 backdrop-blur-md" />
@@ -24,7 +24,7 @@ export function CardZoom({ card, owner, onClose, actions }: { card: CardData | n
               <Tag>{KIND_LABEL[card.kind]}</Tag>{card.type && <Tag>{CARD_TYPE_PT[card.type] ?? card.type}</Tag>}{card.race && <Tag>{CARD_TYPE_PT[card.race] ?? card.race}</Tag>}
               {card.attribute && <Tag>{ATTRIBUTE_LABELS[card.attribute] ?? card.attribute}</Tag>}{card.level ? <Tag>Nível {card.level}</Tag> : null}
             </div>
-            {card.kind === "monster" && <div className="flex gap-4"><Stat label="ATK" value={card.atk} /><Stat label="DEF" value={card.def} /></div>}
+            {card.kind === "monster" && <div className="flex gap-4"><Stat label="ATK" value={card.atk} base={base?.atk} /><Stat label="DEF" value={card.def} base={base?.def} /></div>}
             <p className="card-inspector-detail" lang="pt-BR">{cardText(card).desc}</p>
             <p className="text-xs text-muted-foreground">{effectStatus(card)}</p>
             {actions && <div className="card-inspector-actions">{actions}</div>}
@@ -38,11 +38,13 @@ export function CardZoom({ card, owner, onClose, actions }: { card: CardData | n
 function Tag({ children }: { children: React.ReactNode }) {
   return <span className="rounded border border-border bg-secondary px-2 py-0.5">{children}</span>;
 }
-function Stat({ label, value }: { label: string; value?: number | null | undefined }) {
+function Stat({ label, value, base }: { label: string; value?: number | null | undefined; base?: number | null | undefined }) {
+  const delta = value != null && base != null ? value - base : 0;
   return (
-    <div className="rounded-lg border border-gold/50 bg-background/60 px-4 py-2 text-center">
+    <div className={`rounded-lg border bg-background/60 px-4 py-2 text-center ${delta > 0 ? "border-arena-green stat-boosted" : delta < 0 ? "border-destructive" : "border-gold/50"}`}>
       <p className="font-display text-xs text-gold">{label}</p>
-      <p className="text-2xl font-black">{value ?? "?"}</p>
+      <p className={`text-2xl font-black ${delta > 0 ? "arena-atk-boosted" : delta < 0 ? "text-destructive" : ""}`}>{value ?? "?"}{delta > 0 ? " ↑" : delta < 0 ? " ↓" : ""}</p>
+      {delta !== 0 && <p className="text-xs text-muted-foreground">Original {base} ({delta > 0 ? "+" : ""}{delta})</p>}
     </div>
   );
 }

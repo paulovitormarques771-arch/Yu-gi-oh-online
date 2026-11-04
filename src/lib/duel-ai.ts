@@ -158,11 +158,11 @@ function easyAction(s: DuelState): Action {
       const own = me.monsters.filter((m) => m !== null).sort((a, b) => monsterAtk(s, actor, a) - monsterAtk(s, actor, b));
       const playable = me.hand
         .filter((h) => h.card.kind === "monster" && !(h.card.type ?? "").match(/Fusion|Ritual/))
-        .filter((h) => tributesNeeded(h.card.level) <= own.length)
+        .filter((h) => tributesNeeded(summonLevel(s, actor, h.card)) <= own.length)
         .sort((a, b) => (b.card.atk ?? 0) - (a.card.atk ?? 0));
       const pick = playable[0];
       if (pick) {
-        const need = tributesNeeded(pick.card.level);
+        const need = tributesNeeded(summonLevel(s, actor, pick.card));
         const tributes = own.slice(0, need).map((m) => m.uid);
         const tribAtk = own.slice(0, need).reduce((t, m) => t + monsterAtk(s, actor, m), 0);
         if (need === 0 || (pick.card.atk ?? 0) > tribAtk) {
