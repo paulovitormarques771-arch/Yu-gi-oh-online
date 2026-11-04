@@ -259,7 +259,8 @@
 .arena-card-name { position: absolute; left: 0; right: 0; bottom: 0; background: color-mix(in oklab, var(--background) 88%, transparent); color: var(--foreground); padding: 3px 2px; line-height: 1.05; font-size: 7px; font-weight: 600; text-align: center; }
 .arena-card-stats { position: absolute; left: 0; right: 0; top: 73%; background: var(--background); display: flex; flex-direction: column; align-items: center; font-size: 10px; line-height: 1.1; color: var(--gold); padding: 3px 1px; }
 .arena-card-stats small { font-size: 8px; color: var(--foreground); }
-.arena-atk-boosted { color: var(--arena-boosted-atk); }
+.arena-atk-boosted { color: var(--arena-boosted-atk); text-shadow: 0 0 8px var(--arena-boosted-atk); }
+.stat-boosted { box-shadow: 0 0 18px color-mix(in oklab, var(--arena-boosted-atk) 55%, transparent); }
 .arena-field-mark { width: 100px; height: 138px; border: 1px dashed var(--gold); display: grid; place-content: center; text-align: center; font-size: 10px; color: var(--gold); }
 .arena-card-selected { border-color: var(--gold); outline: 2px solid var(--gold); box-shadow: var(--glow-gold); }
 .arena-card-defense { transform: rotate(90deg) scale(.77); }

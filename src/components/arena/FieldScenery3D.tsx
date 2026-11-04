@@ -11,7 +11,11 @@ export function FieldScenery3D({ theme, colors: c, reduced }: { theme: FieldThem
   useFrame(({ clock }) => { if (animated.current && !reduced) { animated.current.position.y = 0; animated.current.rotation.y = theme === "orichalcos" ? Math.sin(clock.elapsedTime * .3) * .025 : 0; } if (pulse.current && !reduced) pulse.current.opacity = .35 + (Math.sin(clock.elapsedTime * 2.6) + 1) * .28; });
   const color = theme === "orichalcos" || theme === "forest" || theme === "meadow" ? c.green : theme === "ocean" ? c.cyan : theme === "dark" ? c.magic : c.gold;
   return <group ref={animated}>
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, .004, 0]}><planeGeometry args={[8.5, 7.3]} /><meshBasicMaterial color={theme === "orichalcos" || theme === "dark" ? c.ink : color} transparent opacity={theme === "orichalcos" ? .85 : .13} depthWrite={false} /></mesh>
+    <ambientLight color={color} intensity={theme === "orichalcos" ? 1.1 : .7} />
+    {[-3, 3].map((x) => <pointLight key={x} position={[x, 2.4, 0]} color={color} intensity={theme === "orichalcos" ? 9 : 5} distance={9} />)}
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, .006, 0]}><ringGeometry args={[3.9, 4.6, 96]} /><meshBasicMaterial ref={theme === "orichalcos" ? undefined : pulse} color={color} transparent opacity={.5} toneMapped={false} depthWrite={false} /></mesh>
+    {theme === "orichalcos" && [0, 1, 2, 3, 4, 5].map((i) => <mesh key={`p${i}`} position={[Math.cos(i * Math.PI / 3) * 3.5, 1.2, Math.sin(i * Math.PI / 3) * 3.5]}><cylinderGeometry args={[.06, .14, 2.4, 12, 1, true]} /><meshBasicMaterial color={c.green} transparent opacity={.55} toneMapped={false} depthWrite={false} side={2} /></mesh>)}
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, .004, 0]}><planeGeometry args={[8.5, 7.3]} /><meshBasicMaterial color={theme === "orichalcos" || theme === "dark" ? c.ink : color} transparent opacity={theme === "orichalcos" ? .9 : .32} depthWrite={false} /></mesh>
     {theme === "orichalcos" && <group position={[0, .012, 0]} rotation={[-Math.PI / 2, 0, 0]}>
       <mesh position={[0, 0, .001]}><ringGeometry args={[3.46, 3.56, 96]} /><meshBasicMaterial ref={pulse} color={c.green} transparent opacity={.7} toneMapped={false} /></mesh>
       {[1.4, 2.4, 3.5].map((r) => <mesh key={r}><ringGeometry args={[r, r + .025, 96]} /><meshBasicMaterial color={c.green} toneMapped={false} /></mesh>)}
