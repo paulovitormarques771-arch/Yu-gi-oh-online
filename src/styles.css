@@ -131,6 +131,9 @@
   --arena-sword: linear-gradient(90deg, transparent, var(--arena-cyan) 18%, var(--foreground) 50%, var(--gold) 76%, transparent);
   --arena-setup-shade: color-mix(in oklab, var(--background) 74%, transparent);
   --arena-boosted-atk: var(--arena-green);
+  --foil-prism: repeating-linear-gradient(115deg, transparent 0%, color-mix(in oklab, var(--arena-cyan) 42%, transparent) 10%, color-mix(in oklab, var(--magic) 38%, transparent) 20%, color-mix(in oklab, var(--gold) 42%, transparent) 30%, color-mix(in oklab, var(--arena-green) 35%, transparent) 40%, transparent 50%);
+  --foil-sheen: linear-gradient(115deg, transparent 38%, color-mix(in oklab, var(--foreground) 12%, transparent) 44%, color-mix(in oklab, var(--foreground) 65%, transparent) 49%, color-mix(in oklab, var(--gold) 32%, transparent) 52%, transparent 59%);
+  --field-atmosphere: radial-gradient(ellipse at 50% 80%, color-mix(in oklab, var(--field-light, var(--arena-cyan)) 26%, transparent), transparent 72%);
 }
 
 @layer base {
@@ -230,7 +233,10 @@
 .arena-turn-display h1 { font-size: 13px; color: var(--muted-foreground); font-family: var(--font-body); }
 .arena-turn-display strong { font-size: 29px; color: var(--foreground); display: block; line-height: 1.2; font-variant-numeric: tabular-nums; }
 .arena-turn-display span { font-size: 11px; color: var(--arena-cyan); }
-.arena-main-grid { display: grid; grid-template-columns: 185px minmax(0, 1fr) 212px; gap: 16px; margin-top: 16px; align-items: start; }
+.arena-main-grid { display: grid; grid-template-columns: minmax(0, 1fr) 202px; gap: 14px; margin-top: 16px; align-items: start; }
+.arena-left-rail { grid-column: 2; grid-row: 2; }
+.arena-stage { grid-column: 1; grid-row: 1 / 3; }
+.arena-right-rail { grid-column: 2; grid-row: 1; }
 .arena-left-rail, .arena-right-rail { background: var(--arena-panel); border-top: 2px solid var(--arena-cyan); min-width: 0; }
 .arena-rail-heading { font-size: 11px; font-weight: 700; color: var(--arena-cyan); display: flex; align-items: center; gap: 8px; padding: 12px; border-bottom: 1px solid var(--arena-edge); }
 .arena-log { height: 242px; overflow-y: auto; padding: 12px; scrollbar-width: thin; }
@@ -243,7 +249,13 @@
 .arena-selected-detail > span { font-size: 10px; color: var(--arena-cyan); }
 .arena-inspect-button { width: 100%; margin-top: 10px; }
 .arena-stage { position: relative; min-width: 0; }
-.battlefield-scene { position: relative; width: 100%; height: clamp(450px, 42vw, 640px); }
+.battlefield-scene { position: relative; width: 100%; height: clamp(540px, 52vw, 840px); isolation: isolate; }
+.arena-monster-layer { position: absolute; inset: 0; z-index: 11; pointer-events: none; }
+.arena-monster-layer * { pointer-events: none !important; }
+.battlefield-scene[data-field-theme]::before { content: ""; position: absolute; inset: 0; background: var(--field-atmosphere); pointer-events: none; z-index: -1; }
+.battlefield-scene[data-field-theme="orichalcos"], .battlefield-scene[data-field-theme="forest"], .battlefield-scene[data-field-theme="meadow"] { --field-light: var(--arena-green); }
+.battlefield-scene[data-field-theme="dark"], .battlefield-scene[data-field-theme="toon"] { --field-light: var(--magic); }
+.battlefield-scene[data-field-theme="mountain"], .battlefield-scene[data-field-theme="waste"] { --field-light: var(--gold); }
 .battlefield-scene canvas { touch-action: pan-y; }
 .arena-projected-panel { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 10; }
 .arena-projected-camera { position: absolute; inset: 0; pointer-events: none; }
@@ -283,7 +295,7 @@
 .arena-hand-heading { display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--muted-foreground); border-top: 1px solid var(--arena-edge); padding-top: 10px; }
 .arena-hand-heading strong { color: var(--arena-cyan); font-weight: 700; }
 .arena-hand { display: flex; justify-content: center; gap: 10px; padding: 14px 8px 8px; overflow-x: auto; min-height: 160px; scrollbar-width: thin; }
-.arena-hand .arena-card { width: 86px; height: 125px; }
+.arena-hand .arena-card { width: 96px; height: 140px; }
 .arena-hand .arena-card-selected { transform: translateY(-6px); }
 .arena-hand .arena-card-name { font-size: 8px; }
 .arena-phase-track { display: flex; justify-content: center; gap: 4px; margin-top: 4px; }
@@ -310,7 +322,7 @@
 .arena-preview-shell .arena-hud { width: 220px; }
 .arena-preview-shell .arena-avatar { width: 48px; height: 58px; }
 .arena-preview-shell .arena-lp strong { font-size: 28px; }
-.battlefield-preview { height: 510px; max-width: 850px; margin: -15px auto 0; }
+.battlefield-preview { height: 590px; max-width: 1000px; margin: 0 auto; }
 .arena-preview-caption { text-align: center; color: var(--arena-cyan); font-size: 12px; font-weight: 700; }
 .card-inspector-content { max-height: 90svh; width: calc(100vw - 32px); max-width: 920px; overflow-y: auto; border: 1px solid var(--arena-cyan); border-radius: 8px; background: var(--card); padding: 28px; box-shadow: var(--arena-glow); }
 .card-inspector-layout { display: grid; grid-template-columns: minmax(210px, 300px) minmax(0, 1fr); gap: 28px; }
@@ -325,7 +337,7 @@
 .arena-effect-panel > button { margin-top: 10px; width: 100%; white-space: normal; height: auto; min-height: 38px; }
 @keyframes arena-camera-drift { from { transform: scale(1); } to { transform: scale(1.055) translateY(-1%); } }
 @keyframes arena-beam-travel { from { transform: translateX(-100px) rotate(28deg); opacity: .1; } to { transform: translateX(130px) rotate(28deg); opacity: .45; } }
-@media (min-width: 1700px) { .arena-main-grid { grid-template-columns: 210px minmax(0, 1fr) 240px; } }
+@media (min-width: 1700px) { .arena-main-grid { grid-template-columns: minmax(0, 1fr) 240px; } }
 @media (max-width: 1100px) {
   .arena-main-grid { grid-template-columns: minmax(0, 1fr) 192px; gap: 12px; }
   .arena-left-rail { display: none; }
@@ -349,7 +361,7 @@
   .arena-turn-display span { font-size: 8px; }
   .arena-main-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
   .arena-stage, .arena-right-rail { width: 100%; }
-  .battlefield-scene { height: 315px; }
+  .battlefield-scene { height: 390px; }
   .arena-opponent-hand { height: 32px; }
   .arena-opponent-hand .arena-card { width: 23px; height: 32px; }
   .arena-hand { min-height: 132px; gap: 7px; justify-content: safe center; }
@@ -505,6 +517,13 @@
 .arena-context-menu [role="menuitem"] { gap: 9px; min-height: 38px; font-size: 15px; }
 .arena-context-menu svg { width: 16px; height: 16px; color: var(--arena-cyan); flex-shrink: 0; }
 .arena-card-rare { border-color: var(--gold); }
+.card-foil { position: absolute; inset: 0; overflow: hidden; pointer-events: none; border-radius: inherit; }
+.card-foil-prism, .card-foil-sheen { position: absolute; inset: 0; background-size: 280% 280%; mix-blend-mode: screen; }
+.card-foil-prism { background-image: var(--foil-prism); opacity: .38; animation: foil-prism 8s ease-in-out infinite alternate; }
+.card-foil-sheen { background-image: var(--foil-sheen); opacity: .6; animation: foil-sheen 6s ease-in-out infinite; }
+.arena-card-name, .arena-card-stats { z-index: 2; }
+@keyframes foil-prism { from { background-position: 0% 25%; } to { background-position: 100% 80%; } }
+@keyframes foil-sheen { 0%,15% { background-position: 120% 50%; } 75%,100% { background-position: -20% 50%; } }
 .arena-card-lightning { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .card-bolt { fill: none; stroke: var(--arena-cyan); stroke-width: 1.8; stroke-linejoin: miter; opacity: .8; animation: card-lightning 2.8s ease-in-out infinite; }
 .card-bolt-b { stroke: var(--gold); animation-delay: -.9s; }
@@ -562,6 +581,7 @@
   .arena-duel-opening strong { font-size: 40px; }
 }
 @media (prefers-reduced-motion: reduce) {
+  .card-foil-prism, .card-foil-sheen { animation: none; background-position: 45% 50%; }
   .card-bolt, .arena-sword-cut::before, .arena-sword-cut::after, .arena-duel-opening { animation: none; }
   .arena-taking-damage .arena-dashboard, .arena-drawn-card, .arena-lp-sword, .arena-hud-sword { animation: none; }
   .arena-drawn-card { display: none; }

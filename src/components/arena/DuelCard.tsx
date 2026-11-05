@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { ATTRIBUTE_LABELS, type CardData } from "@/data/catalog";
 import { rareCard } from "@/lib/duel-setup";
 import { CardLightning } from "@/components/arena/CardLightning";
+import { CardFoil } from "@/components/arena/CardFoil";
 
 const kindStyle: Record<CardData["kind"], string> = {
   monster: "from-gold/30 via-card to-card",
@@ -37,7 +38,7 @@ export function DuelCard({ card, className, interactive = true }: { card: CardDa
           <span className="px-2 text-center font-display text-[10px] text-muted-foreground">{card.name}</span>
         </div>
       )}
-      {rareCard(card) && <CardLightning />}
+      {rareCard(card) && <><CardFoil /><CardLightning /></>}
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-background via-background/85 to-transparent p-2 pt-6">
         <p className="truncate font-display text-[11px] font-bold leading-tight">{card.name}</p>
         <div className="mt-0.5 flex items-center justify-between text-[9px] text-muted-foreground">
