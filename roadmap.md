@@ -1,4 +1,7 @@
 # Duel Arena roadmap
+- [ ] Pedido visual atual: aproximar câmera/tabuleiro e ampliar cartas preservando controles e zonas.
+- [ ] Pedido visual atual: foil iridescente em raras visíveis e monstros sólidos com as seis imagens enviadas.
+- [ ] Pedido visual atual: cenários de campo com cores/luzes marcantes e zonas nítidas; conferir arena, ataques e privacidade em desktop/celular.
 - [x] Etapa 1: páginas, identidade visual e navegação
 - [x] Etapa 2: autenticação, perfil e persistência (Lovable Cloud)
 - [x] Etapa 3: coleção de cartas e construtor de decks
