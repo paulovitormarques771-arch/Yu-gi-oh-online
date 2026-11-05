@@ -27,7 +27,7 @@ export function HoloArt3D({ art, color, reduced, attacking = false }: { art: { u
   tex.colorSpace = SRGBColorSpace; tex.anisotropy = 8;
   const g = useRef<Group>(null);
   const relief = useMemo(() => {
-    const geometry = new PlaneGeometry(art.w, art.h, 72, 56);
+    const geometry = new PlaneGeometry(art.w, art.h, 48, 32);
     const positions = geometry.attributes['position'];
     const uv = geometry.attributes['uv'];
     if (positions && uv) {
@@ -53,16 +53,16 @@ export function HoloArt3D({ art, color, reduced, attacking = false }: { art: { u
       g.current.quaternion.copy(camera.quaternion);
       if (!reduced) {
         g.current.rotateY(Math.sin(t * 1.3) * (attacking ? .15 : .065));
-        g.current.position.y = art.h / 2 + .64 + Math.sin(t * 1.6) * .035;
+        g.current.position.y = art.h / 2 + .94 + Math.sin(t * 1.6) * .035;
         g.current.rotation.z += attacking ? Math.sin(t * 8) * .04 : Math.sin(t * 1.2) * .012;
       }
     }
   });
   return <group>
     <mesh position={[0, .03, 0]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[.38, .41, 48]} /><meshBasicMaterial color={color} toneMapped={false} transparent opacity={.6} /></mesh>
-    <group ref={g} position={[0, art.h / 2 + .64, 0]}>
+    <group ref={g} position={[0, art.h / 2 + .94, 0]}>
       {[-.06, -.03].map(z => <mesh key={z} geometry={relief} position={[0, 0, z]}><meshStandardMaterial map={tex} color={color} alphaTest={.3} side={DoubleSide} roughness={.65} metalness={.15} /></mesh>)}
-      <mesh geometry={relief}><meshStandardMaterial map={tex} emissiveMap={tex} emissiveIntensity={.22} alphaTest={.12} roughness={.6} metalness={.08} side={DoubleSide} /></mesh>
+      <mesh geometry={relief}><meshBasicMaterial map={tex} alphaTest={.12} toneMapped={false} side={DoubleSide} /></mesh>
     </group>
   </group>;
 }

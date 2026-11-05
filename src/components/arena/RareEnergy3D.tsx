@@ -60,7 +60,7 @@ export function RareEnergy3D({ x, z, colors, card, reduced, burst = false, attac
     strike.current = f.strike;
     if (model.current) {
       const emergence = attack || burst ? f.emerge : 1;
-      model.current.scale.setScalar((.08 + emergence * .92) * (attack ? 1.15 : .68));
+      model.current.scale.setScalar((.08 + emergence * .92) * (attack ? 1.15 : art ? .82 : .68));
       const travel = profile.strike === "punch" ? f.strike * .8 : profile.model === "dragon" ? f.strike * .2 : 0;
       model.current.position.set(attack ? dx * travel : 0, attack || burst ? -.15 + emergence * .35 : .1, attack ? dz * travel : 0);
       model.current.rotation.y = art ? 0 : attack ? Math.atan2(dx, dz) : direction < 0 ? Math.PI : 0;
