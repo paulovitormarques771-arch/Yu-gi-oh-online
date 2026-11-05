@@ -251,7 +251,7 @@
 .arena-stage { position: relative; min-width: 0; }
 .battlefield-scene { position: relative; width: 100%; height: clamp(540px, 52vw, 840px); isolation: isolate; }
 .arena-monster-layer { position: absolute; inset: 0; z-index: 11; pointer-events: none; }
-.arena-monster-layer canvas { pointer-events: none; }
+.arena-monster-layer * { pointer-events: none !important; }
 .battlefield-scene[data-field-theme]::before { content: ""; position: absolute; inset: 0; background: var(--field-atmosphere); pointer-events: none; z-index: -1; }
 .battlefield-scene[data-field-theme="orichalcos"], .battlefield-scene[data-field-theme="forest"], .battlefield-scene[data-field-theme="meadow"] { --field-light: var(--arena-green); }
 .battlefield-scene[data-field-theme="dark"], .battlefield-scene[data-field-theme="toon"] { --field-light: var(--magic); }
