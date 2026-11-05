@@ -1,7 +1,7 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer } from "@react-three/drei";
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { CanvasTexture, SRGBColorSpace, Vector3, type PerspectiveCamera, type Points, type MeshBasicMaterial, type Group } from "three";
+import { BufferGeometry, Float32BufferAttribute, CanvasTexture, SRGBColorSpace, Vector3, type PerspectiveCamera, type Points, type MeshBasicMaterial, type Group } from "three";
 import { ArenaCard, CardBack } from "@/components/arena/ArenaCard";
 import type { CardData } from "@/data/catalog";
 import { monsterAtk, monsterDef, type DuelState, type PlayerState } from "@/lib/duel-engine";
@@ -71,13 +71,21 @@ function CameraRig() {
 
 function Frame({ x, z, color }: { x: number; z: number; color: string }) {
   const corners = useMemo(() => new Float32Array([-.51, .01, -.69, .51, .01, -.69, .51, .01, .69, -.51, .01, .69]), []);
+  const brackets = useMemo(() => {
+    const points: number[] = [];
+    const rect = (left: number, right: number, top: number, bottom: number) => points.push(left,.018,top, right,.018,top, right,.018,bottom, left,.018,top, right,.018,bottom, left,.018,bottom);
+    for (const side of [-1,1]) for (const end of [-1,1]) {
+      const a=side*.51,b=end*.69;
+      rect(Math.min(a,a-side*.2),Math.max(a,a-side*.2),b-.012,b+.012);
+      rect(a-.012,a+.012,Math.min(b,b-end*.22),Math.max(b,b-end*.22));
+    }
+    const geometry = new BufferGeometry(); geometry.setAttribute('position',new Float32BufferAttribute(points,3)); return geometry;
+  }, []);
+  useEffect(() => () => brackets.dispose(), [brackets]);
   return <group position={[x, 0.025, z]}>
     <mesh rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[1.02, 1.38]} /><meshBasicMaterial color={color} transparent opacity={0.045} /></mesh>
     <lineLoop><bufferGeometry><bufferAttribute attach="attributes-position" args={[corners, 3]} /></bufferGeometry><lineBasicMaterial color={color} toneMapped={false} /></lineLoop>
-    {[-1, 1].flatMap(side => [-1, 1].map(end => <group key={`${side}-${end}`} position={[side * .51, .008, end * .69]}>
-      <mesh position={[-side * .1, 0, 0]}><boxGeometry args={[.2, .014, .025]} /><meshBasicMaterial color={color} toneMapped={false} /></mesh>
-      <mesh position={[0, 0, -end * .11]}><boxGeometry args={[.025, .014, .22]} /><meshBasicMaterial color={color} toneMapped={false} /></mesh>
-    </group>))}
+    <mesh geometry={brackets}><meshBasicMaterial color={color} toneMapped={false} side={2} /></mesh>
   </group>;
 }
 

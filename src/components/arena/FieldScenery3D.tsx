@@ -8,16 +8,18 @@ type Colors = { cyan: string; green: string; gold: string; magic: string; surfac
 export function FieldScenery3D({ theme, colors: c, reduced }: { theme: FieldTheme; colors: Colors; reduced: boolean }) {
   const animated = useRef<Group>(null);
   const pulse = useRef<MeshBasicMaterial>(null);
-  useFrame(({ clock }) => { if (animated.current && !reduced) { animated.current.position.y = 0; animated.current.rotation.y = theme === "orichalcos" ? Math.sin(clock.elapsedTime * .3) * .025 : 0; } if (pulse.current && !reduced) pulse.current.opacity = .35 + (Math.sin(clock.elapsedTime * 2.6) + 1) * .28; });
+  useFrame(({ clock }) => { if (pulse.current && !reduced) pulse.current.opacity = .35 + (Math.sin(clock.elapsedTime * 2.6) + 1) * .28; });
   const color = theme === "orichalcos" || theme === "forest" || theme === "meadow" ? c.green : theme === "ocean" ? c.cyan : theme === "dark" ? c.magic : c.gold;
   const terrain = useMemo(() => {
     const canvas = document.createElement("canvas"); canvas.width = 512; canvas.height = 512;
     const ctx = canvas.getContext("2d");
     if (ctx) {
       ctx.fillStyle = theme === "orichalcos" || theme === "dark" ? c.ink : c.surface; ctx.fillRect(0, 0, 512, 512);
-      for (let i = 0; i < 2800; i++) {
-        ctx.globalAlpha = .06 + (i % 9) * .035; ctx.strokeStyle = i % 7 ? color : c.foreground;
-        const x = (i * 127) % 512, y = (i * 79) % 512;
+      const wash = ctx.createRadialGradient(256, 256, 40, 256, 256, 360);
+      wash.addColorStop(0, color); wash.addColorStop(1, c.ink); ctx.globalAlpha = theme === "orichalcos" || theme === "dark" ? .16 : .28; ctx.fillStyle = wash; ctx.fillRect(0, 0, 512, 512);
+      for (let i = 0; i < 1600; i++) {
+        ctx.globalAlpha = .015 + (i % 9) * .012; ctx.strokeStyle = i % 7 ? color : c.foreground;
+        const x = (Math.sin(i * 127.1) + 1) * 256, y = (Math.cos(i * 311.7) + 1) * 256;
         ctx.beginPath(); ctx.moveTo(x, y);
         if (theme === "ocean") ctx.bezierCurveTo(x + 15, y - 8, x + 35, y + 8, x + 55, y);
         else if (theme === "forest" || theme === "meadow") ctx.lineTo(x + Math.sin(i) * 8, y - 12);
@@ -32,9 +34,9 @@ export function FieldScenery3D({ theme, colors: c, reduced }: { theme: FieldThem
   return <group ref={animated}>
     <ambientLight color={color} intensity={theme === "orichalcos" ? 1.1 : .7} />
     {[-3, 3].map((x) => <pointLight key={x} position={[x, 2.4, 0]} color={color} intensity={theme === "orichalcos" ? 12 : 8} distance={9} />)}
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, .006, 0]}><ringGeometry args={[3.9, 4.6, 96]} /><meshBasicMaterial color={color} transparent opacity={.5} toneMapped={false} depthWrite={false} /></mesh>
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, .006, 0]}><ringGeometry args={[4.25, 4.3, 96]} /><meshBasicMaterial color={color} transparent opacity={.3} toneMapped={false} depthWrite={false} /></mesh>
     {theme === "orichalcos" && [0, 1, 2, 3, 4, 5].map((i) => <mesh key={`p${i}`} position={[Math.cos(i * Math.PI / 3) * 3.5, 1.2, Math.sin(i * Math.PI / 3) * 3.5]}><cylinderGeometry args={[.06, .14, 2.4, 12, 1, true]} /><meshBasicMaterial color={c.green} transparent opacity={.55} toneMapped={false} depthWrite={false} side={2} /></mesh>)}
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, .004, 0]}><planeGeometry args={[8.5, 7.3]} /><meshStandardMaterial map={terrain} emissive={color} emissiveIntensity={theme === "orichalcos" ? .08 : .12} metalness={theme === "ocean" ? .8 : .25} roughness={theme === "ocean" ? .18 : .65} /></mesh>
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, .004, 0]}><planeGeometry args={[8.5, 7.3]} /><meshBasicMaterial map={terrain} toneMapped={false} /></mesh>
     {theme === "orichalcos" && <group position={[0, .012, 0]} rotation={[-Math.PI / 2, 0, 0]}>
       <mesh position={[0, 0, .001]}><ringGeometry args={[3.46, 3.56, 96]} /><meshBasicMaterial ref={pulse} color={c.green} transparent opacity={.7} toneMapped={false} /></mesh>
       {[1.4, 2.4, 3.5].map((r) => <mesh key={r}><ringGeometry args={[r, r + .025, 96]} /><meshBasicMaterial color={c.green} toneMapped={false} /></mesh>)}
