@@ -9,6 +9,7 @@ export function SpellCinematic3D({ event, viewer, colors: c, reduced }: { event:
   const group = useRef<Group>(null), swirl = useRef<Group>(null);
   const start = useRef(performance.now());
   const { kind } = event;
+  const illustrated = SPELL_ART[event.card.id];
   const own = event.owner === viewer;
   const defensive = ["mirror", "cylinder", "armor", "javelin", "negate"].includes(kind);
   const targetZ = event.targetOwner === undefined ? own === defensive ? 1.02 : -1.02 : event.targetOwner === viewer ? 1.02 : -1.02;
@@ -23,7 +24,7 @@ export function SpellCinematic3D({ event, viewer, colors: c, reduced }: { event:
   });
   return <group ref={group} position={[x, .12, ["blackhole", "storm", "fusion", "search"].includes(kind) ? 0 : targetZ]}>
     <pointLight position={[0, 2, 0]} color={color} intensity={3} distance={7} />
-    {SPELL_ART[event.card.id] && <Suspense fallback={null}><SpellArt3D art={SPELL_ART[event.card.id]!} reduced={reduced} /></Suspense>}
+    {illustrated && <Suspense fallback={null}><SpellArt3D art={illustrated} reduced={reduced} /></Suspense>}
     {vortex && <group ref={swirl}>
       {Array.from({ length: 7 }, (_, i) => <mesh key={i} position={[0, i * .18, 0]} rotation={[-Math.PI / 2 + .12, .1, i * .5]}><torusGeometry args={[.3 + i * .2, .035, 8, 64, Math.PI * 1.75]} /><meshBasicMaterial color={i % 2 ? color : c.foreground} transparent opacity={.65} toneMapped={false} /></mesh>)}
       {kind === "blackhole" && <mesh rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[1.45, 64]} /><meshBasicMaterial color={c.ink} /></mesh>}
