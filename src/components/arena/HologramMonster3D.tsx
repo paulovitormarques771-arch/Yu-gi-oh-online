@@ -6,7 +6,7 @@ import type { RareProfile } from "@/lib/rare-vfx";
 type FormProps = { color: string; core: string; attacking: boolean; reduced: boolean; strike: React.MutableRefObject<number> };
 
 function Skin({ color, wire = false }: { color: string; wire?: boolean }) {
-  return wire ? <meshBasicMaterial color={color} wireframe transparent opacity={.36} depthWrite={false} toneMapped={false} side={DoubleSide} /> : <meshStandardMaterial color={color} roughness={.35} metalness={.45} emissive={color} emissiveIntensity={.18} side={DoubleSide} />;
+  return <meshStandardMaterial color={color} roughness={wire ? .3 : .42} metalness={wire ? .55 : .28} emissive={color} emissiveIntensity={wire ? .08 : .035} side={DoubleSide} />;
 }
 
 function Dragon({ color, core, attacking, reduced, strike }: FormProps) {
@@ -22,7 +22,7 @@ function Dragon({ color, core, attacking, reduced, strike }: FormProps) {
   });
   return <group>
     <mesh position={[0, .8, 0]} scale={[.36, .57, .35]}><sphereGeometry args={[1, 32, 24]} /><Skin color={color} /></mesh>
-    <mesh position={[0, .8, 0]} scale={[.37, .58, .36]}><sphereGeometry args={[1, 8, 6]} /><Skin color={core} wire /></mesh>
+    <mesh position={[0, .8, .13]} scale={[.23, .44, .26]}><sphereGeometry args={[1, 24, 16]} /><Skin color={core} /></mesh>
     <group ref={neck} position={[0, 1.15, .1]}>
       <mesh position={[0, .28, .1]} rotation={[.3, 0, 0]}><cylinderGeometry args={[.15, .25, .65, 8]} /><Skin color={color} /></mesh>
       <mesh position={[0, .6, .28]} scale={[.24, .2, .42]}><sphereGeometry args={[1, 8, 6]} /><Skin color={color} /></mesh>
@@ -36,7 +36,6 @@ function Dragon({ color, core, attacking, reduced, strike }: FormProps) {
     <group ref={wings} position={[0, 1.1, -.15]}>
       {[-1, 1].map((side) => <group key={side} scale={[side, 1, 1]} rotation={[0, -.3, .05]}>
         <mesh><shapeGeometry args={[shape]} /><Skin color={color} /></mesh>
-        <mesh position={[0, 0, .01]}><shapeGeometry args={[shape]} /><Skin color={core} wire /></mesh>
         {[.2, .5, .8].map((n) => <mesh key={n} position={[.75, n * .15, .02]} rotation={[0, 0, -1.1 + n]}><cylinderGeometry args={[.018, .025, 1.5, 5]} /><Skin color={core} /></mesh>)}
       </group>)}
     </group>
@@ -57,7 +56,7 @@ function Humanoid({ color, core, attacking, reduced, strike, colossus, demon }: 
   const broad = colossus || demon;
   return <group>
     <mesh position={[0, .86, 0]} scale={[broad ? .46 : .24, .48, .22]}><sphereGeometry args={[1, 10, 8]} /><Skin color={color} /></mesh>
-    <mesh position={[0, 1, .02]} scale={[broad ? .47 : .25, .33, .23]}><octahedronGeometry args={[1]} /><Skin color={core} wire /></mesh>
+    <mesh position={[0, 1, .09]} scale={[broad ? .35 : .18, .25, .2]}><sphereGeometry args={[1, 24, 16]} /><Skin color={core} /></mesh>
     <mesh position={[0, 1.48, 0]} scale={[.19, .23, .18]}><sphereGeometry args={[1, 8, 8]} /><Skin color={color} /></mesh>
     <mesh position={[0, 1.51, .16]}><boxGeometry args={[.22, .035, .06]} /><Skin color={core} /></mesh>
     {broad ? [-1, 1].map((side) => <mesh key={side} position={[side * .2, 1.74, 0]} rotation={[0, 0, side * -.35]}><coneGeometry args={[.09, .36, 5]} /><Skin color={core} /></mesh>) : <>

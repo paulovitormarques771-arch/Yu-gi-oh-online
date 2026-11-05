@@ -1,7 +1,7 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer } from "@react-three/drei";
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { CanvasTexture, SRGBColorSpace, Vector3, type Points, type MeshBasicMaterial, type Group } from "three";
+import { CanvasTexture, SRGBColorSpace, Vector3, type PerspectiveCamera, type Points, type MeshBasicMaterial, type Group } from "three";
 import { ArenaCard, CardBack } from "@/components/arena/ArenaCard";
 import type { CardData } from "@/data/catalog";
 import { monsterAtk, monsterDef, type DuelState, type PlayerState } from "@/lib/duel-engine";
@@ -49,10 +49,21 @@ function useArenaColors() {
 function CameraRig() {
   const { camera, size } = useThree();
   useEffect(() => {
-    const aspect = size.width / size.height;
-    const distance = Math.max(.78, 1.17 / aspect);
-    camera.position.set(0, 9.9 * distance, 8.1 * distance);
-    camera.lookAt(0, 0, 0.1);
+    const perspective = camera as PerspectiveCamera;
+    perspective.aspect = size.width / size.height;
+    perspective.updateProjectionMatrix();
+    // Fit the actual table corners, not an aspect-ratio guess: no cropped decks.
+    const corners = [-4.4, 4.4].flatMap(x => [-3.85, 3.85].map(z => new Vector3(x, 0, z)));
+    let near = .4, far = 4;
+    for (let i = 0; i < 24; i++) {
+      const distance = (near + far) / 2;
+      camera.position.set(0, 9.9 * distance, 8.1 * distance);
+      camera.lookAt(0, 0, .15); camera.updateMatrixWorld();
+      const fits = corners.every(corner => { const v = corner.clone().project(camera); return Math.abs(v.x) < .95 && v.y > -.94 && v.y < .84; });
+      if (fits) far = distance; else near = distance;
+    }
+    camera.position.set(0, 9.9 * far, 8.1 * far);
+    camera.lookAt(0, 0, .15);
     camera.updateProjectionMatrix();
   }, [camera, size]);
   return null;
@@ -63,6 +74,10 @@ function Frame({ x, z, color }: { x: number; z: number; color: string }) {
   return <group position={[x, 0.025, z]}>
     <mesh rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[1.02, 1.38]} /><meshBasicMaterial color={color} transparent opacity={0.045} /></mesh>
     <lineLoop><bufferGeometry><bufferAttribute attach="attributes-position" args={[corners, 3]} /></bufferGeometry><lineBasicMaterial color={color} toneMapped={false} /></lineLoop>
+    {[-1, 1].flatMap(side => [-1, 1].map(end => <group key={`${side}-${end}`} position={[side * .51, .008, end * .69]}>
+      <mesh position={[-side * .1, 0, 0]}><boxGeometry args={[.2, .014, .025]} /><meshBasicMaterial color={color} toneMapped={false} /></mesh>
+      <mesh position={[0, 0, -end * .11]}><boxGeometry args={[.025, .014, .22]} /><meshBasicMaterial color={color} toneMapped={false} /></mesh>
+    </group>))}
   </group>;
 }
 
@@ -204,9 +219,29 @@ function CombatPulse({ event, viewer, reduced }: { event: CombatEvent; viewer: 0
   </group>;
 }
 
-function Scene({ onReady, reduced, panelList, panelRefs, ...p }: BattlefieldProps & { onReady: () => void; reduced: boolean; panelList: Panel[]; panelRefs: PanelRefs }) {
+function MonsterLayer({ reduced, ...p }: BattlefieldProps & { reduced: boolean }) {
   const colors = useArenaColors();
   const attackPath = rareAttackPath(p.combat, p.viewer ?? 0);
+  return <>
+    <CameraRig />
+    <ambientLight intensity={1.3} /><directionalLight position={[0, 8, 6]} intensity={3} />
+    <Environment resolution={64}><Lightformer intensity={2} position={[0, 5, 3]} scale={[10, 10, 1]} /></Environment>
+    {[{ player: p.me, owner: p.viewer ?? 0, z: 1.02 }, { player: p.opponent, owner: (p.viewer ?? 0) === 0 ? 1 : 0, z: -1.02 }].flatMap(({ player, owner, z }) => player.monsters.flatMap((monster, index) => {
+      if (!monster || monster.faceDown || !rareCard(monster.card)) return [];
+      const burst = !!p.summon?.monsters.some(entry => entry.uid === monster.uid && entry.owner === owner);
+      if (p.combat?.attackerUid === monster.uid && attackPath) return [];
+      return [<RareEnergy3D key={monster.uid} x={(index - 2) * 1.17} z={z} card={monster.card} colors={colors} reduced={reduced} burst={burst} direction={owner === (p.viewer ?? 0) ? -1 : 1} />];
+    }))}
+    {attackPath && p.combat?.attackerCard && <RareEnergy3D key={`rare-attack-${p.combat.id}`} x={attackPath.source[0]} z={attackPath.source[1]} targetX={attackPath.target[0]} targetZ={attackPath.target[1]} card={p.combat.attackerCard} colors={colors} reduced={reduced} attack direction={p.combat.owner === (p.viewer ?? 0) ? -1 : 1} />}
+    {p.spellEvent && <SpellCinematic3D key={p.spellEvent.id} event={p.spellEvent} viewer={p.viewer ?? 0} colors={colors} reduced={reduced} />}
+  </>;
+}
+
+function Scene({ onReady, reduced, panelList, panelRefs, ...p }: BattlefieldProps & { onReady: () => void; reduced: boolean; panelList: Panel[]; panelRefs: PanelRefs }) {
+  const colors = useArenaColors();
+  const field = activeField([p.me.fieldSpell, p.opponent.fieldSpell]);
+  const theme = field ? FIELD_THEMES[field.card.id] : undefined;
+  const terrainColor = theme === "orichalcos" || theme === "forest" || theme === "meadow" ? colors.green : theme === "ocean" ? colors.cyan : theme === "dark" || theme === "toon" ? colors.magic : theme ? colors.gold : colors.surface;
   const surface = useMemo(() => {
     const canvas = document.createElement("canvas"); canvas.width = 256; canvas.height = 256;
     const ctx = canvas.getContext("2d");
@@ -214,6 +249,8 @@ function Scene({ onReady, reduced, panelList, panelRefs, ...p }: BattlefieldProp
       ctx.fillStyle = colors.surface; ctx.fillRect(0, 0, 256, 256);
       ctx.strokeStyle = colors.edge; ctx.lineWidth = .5;
       for (let i = 0; i < 256; i += 16) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 256); ctx.moveTo(0, i); ctx.lineTo(256, i); ctx.stroke(); }
+      // Fine alloy grain keeps the board tactile without obscuring zone boundaries.
+      for (let i = 0; i < 1900; i++) { ctx.globalAlpha = .12; ctx.fillStyle = i % 2 ? colors.foreground : colors.ink; ctx.fillRect((i * 73) % 256, (i * 37) % 256, 1, 1); } ctx.globalAlpha = 1;
     }
     const texture = new CanvasTexture(canvas); texture.colorSpace = SRGBColorSpace; return texture;
   }, [colors]);
@@ -230,8 +267,8 @@ function Scene({ onReady, reduced, panelList, panelRefs, ...p }: BattlefieldProp
     <pointLight position={[-4, 3, -1]} color={colors.cyan} intensity={12} /><pointLight position={[4, 3, 1]} color={colors.green} intensity={12} />
     <Environment resolution={64}><Lightformer intensity={2} position={[0, 5, 0]} scale={[10, 10, 1]} /><Lightformer intensity={1} color={colors.cyan} position={[-5, 1, -1]} rotation-y={Math.PI / 2} scale={[20, 1, 1]} /></Environment>
     <mesh position={[0, -.17, 0]}><boxGeometry args={[8.65, .3, 7.48]} /><meshStandardMaterial color={colors.edge} metalness={.7} roughness={.35} /></mesh>
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -.008, 0]}><planeGeometry args={[8.56, 7.4]} /><meshStandardMaterial map={surface} metalness={.4} roughness={.65} /></mesh>
-    {(() => { const field = activeField([p.me.fieldSpell, p.opponent.fieldSpell]); const theme = field ? FIELD_THEMES[field.card.id] : undefined; return theme ? <FieldScenery3D key={field?.uid} theme={theme} colors={colors} reduced={reduced} /> : null; })()}
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -.008, 0]}><planeGeometry args={[8.56, 7.4]} /><meshStandardMaterial map={surface} color={theme ? terrainColor : colors.foreground} emissive={terrainColor} emissiveIntensity={theme ? .22 : .015} metalness={.65} roughness={.4} /></mesh>
+    {theme && <FieldScenery3D key={field?.uid} theme={theme} colors={colors} reduced={reduced} />}
     {[-1, 1].map((n) => <group key={n}>
       <mesh position={[n * 4.28, .01, 0]}><boxGeometry args={[.035, .025, 7.4]} /><meshBasicMaterial color={n < 0 ? colors.cyan : colors.green} toneMapped={false} /></mesh>
       <mesh position={[0, .01, n * 3.7]}><boxGeometry args={[8.6, .025, .035]} /><meshBasicMaterial color={n < 0 ? colors.cyan : colors.green} toneMapped={false} /></mesh>
@@ -248,14 +285,7 @@ function Scene({ onReady, reduced, panelList, panelRefs, ...p }: BattlefieldProp
     <Frame x={-3.7} z={3.05} color={colors.gold} />
     <Frame x={3.7} z={-3.05} color={colors.gold} />
     {panelList.map((panel) => <ProjectPanel key={panel.id} panel={panel} refs={panelRefs} />)}
-    {[{ player: p.me, owner: p.viewer ?? 0, z: 1.02 }, { player: p.opponent, owner: (p.viewer ?? 0) === 0 ? 1 : 0, z: -1.02 }].flatMap(({ player, owner, z }) => player.monsters.flatMap((monster, index) => {
-      if (!monster || monster.faceDown || !rareCard(monster.card)) return [];
-      const burst = !!p.summon?.monsters.some((entry) => entry.uid === monster.uid && entry.owner === owner);
-      return [<RareEnergy3D key={`${monster.uid}-${burst ? p.summon?.id : "aura"}`} x={(index - 2) * 1.17} z={z} card={monster.card} colors={colors} reduced={reduced} burst={burst} />];
-    }))}
-    {attackPath && p.combat?.attackerCard && <RareEnergy3D key={`rare-attack-${p.combat.id}`} x={attackPath.source[0]} z={attackPath.source[1]} targetX={attackPath.target[0]} targetZ={attackPath.target[1]} card={p.combat.attackerCard} colors={colors} reduced={reduced} attack direction={p.combat.owner === (p.viewer ?? 0) ? -1 : 1} />}
     <Energy reduced={reduced} onReady={onReady} />
-    {p.spellEvent && <SpellCinematic3D key={p.spellEvent.id} event={p.spellEvent} viewer={p.viewer ?? 0} colors={colors} reduced={reduced} />}
     {p.combat && !(p.combat.attackerCard && rareCard(p.combat.attackerCard)) && <CombatPulse key={p.combat.id} event={p.combat} viewer={p.viewer ?? 0} reduced={reduced} />}
   </>;
 }
@@ -282,6 +312,11 @@ export function Battlefield3D(p: BattlefieldProps) {
     {panelList.map((panel) => <div className="arena-projected-panel" key={panel.id} ref={(element) => { if (element) panelRefs.current.set(panel.id, element); else panelRefs.current.delete(panel.id); }}>
       <div className="arena-projected-camera"><div className="arena-projected-object">{panel.content}</div></div>
     </div>)}
+    <div className="arena-monster-layer" aria-hidden="true">
+      <Canvas camera={{ fov: 40, near: .1, far: 60 }} dpr={[1, 2]} frameloop={reduced ? "demand" : "always"} gl={{ alpha: true, antialias: true }}>
+        <MonsterLayer {...p} reduced={reduced} />
+      </Canvas>
+    </div>
     {!ready && <div className="arena-loading"><CardBack /><span>PREPARANDO O CAMPO</span></div>}
     <div className="arena-row-label enemy-label">MONSTROS · OPONENTE</div>
     <div className="arena-row-label own-label">MAGIAS & ARMADILHAS</div>
