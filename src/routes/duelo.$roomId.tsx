@@ -324,7 +324,7 @@ function Arena({ online, selection, onPrepare }: { online?: OnlineSeat; selectio
           <div className="arena-graveyard"><div className="arena-graveyard-tabs"><Button size="sm" variant={grave === "own" ? "secondary" : "ghost"} aria-pressed={grave === "own"} onClick={() => setGrave("own")}>Seu ({me.graveyard.length})</Button><Button size="sm" variant={grave === "enemy" ? "secondary" : "ghost"} aria-pressed={grave === "enemy"} onClick={() => setGrave("enemy")}>Oponente ({opponent.graveyard.length})</Button></div>
             {graveCards.length ? <div className="arena-graveyard-cards">{graveCards.map((card, i) => {
               const choice = playable ? graveyardEffectChoice(s, view, grave === "enemy" ? opponentId : view, i) : undefined;
-              return <ArenaCard key={`${card.id}-${i}`} card={card} className={choice ? "arena-card-available" : undefined} onClick={() => choice ? act({ type: "resolveEffect", choice }) : inspect(card, grave === "enemy")} />;
+              return <ArenaCard key={`${card.id}-${i}`} card={card} className={choice ? "arena-card-available" : ""} onClick={() => choice ? act({ type: "resolveEffect", choice }) : inspect(card, grave === "enemy")} />;
             })}</div> : <div className="arena-empty-grave">Nenhuma carta</div>}
           </div>
         </aside>
