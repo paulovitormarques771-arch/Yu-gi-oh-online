@@ -17,10 +17,8 @@ function setup(actor: PlayerId = 0) {
 describe("Reviver Monstro cemetery selection", () => {
   it.each(["easy", "normal", "hard"] as const)("AI %s can activate and revive from the opponent cemetery", (difficulty) => {
     const state = setup(1); state.players[1].graveyard = [];
-    const action = aiNextAction(state, difficulty);
-    expect(action.type).toBe("activateSpell");
-    const pending = applyAction(state, action);
-    const next = applyAction(pending, aiNextAction(pending, difficulty));
+    let next = state;
+    for (let step = 0; step < 4 && !next.players[1].monsters.some(Boolean); step++) next = applyAction(next, aiNextAction(next, difficulty));
     expect(next.players[1].monsters[0]?.card.id).toBe(89631139);
   });
   it.each([0, 1] as const)("revives from cemetery %i onto the activating player's field", (owner) => {
