@@ -3,6 +3,7 @@ import { CARDS_BY_ID } from "@/data/cards";
 import { applyAction, createDuel, type PlayerId } from "@/lib/duel-engine";
 import { activationError, graveyardEffectChoice } from "@/lib/arena-presentation";
 import { spellEvent } from "@/lib/spell-cinematics";
+import { aiNextAction } from "@/lib/duel-ai";
 
 const card = (id: number) => { const found = CARDS_BY_ID.get(id); if (!found) throw new Error(`Missing ${id}`); return found; };
 function setup(actor: PlayerId = 0) {
@@ -14,6 +15,14 @@ function setup(actor: PlayerId = 0) {
   return state;
 }
 describe("Reviver Monstro cemetery selection", () => {
+  it.each(["easy", "normal", "hard"] as const)("AI %s can activate and revive from the opponent cemetery", (difficulty) => {
+    const state = setup(1); state.players[1].graveyard = [];
+    const action = aiNextAction(state, difficulty);
+    expect(action.type).toBe("activateSpell");
+    const pending = applyAction(state, action);
+    const next = applyAction(pending, aiNextAction(pending, difficulty));
+    expect(next.players[1].monsters[0]?.card.id).toBe(89631139);
+  });
   it.each([0, 1] as const)("revives from cemetery %i onto the activating player's field", (owner) => {
     const state = setup();
     const pending = applyAction(state, { type: "activateSpell", handUid: "reborn" });
