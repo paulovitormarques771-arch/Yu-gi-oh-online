@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Link } from "@tanstack/react-router";
-import { Copy, Loader2 } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { Copy, Flag, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
@@ -10,16 +10,20 @@ import type { DuelState, PlayerId } from "@/lib/duel-engine";
 import type { CardData } from "@/data/catalog";
 import { DuelSetup, type DuelSelection } from "@/components/arena/DuelSetup";
 import { deckFromIds, isPreparation, readyPreparation, type RoomState } from "@/lib/duel-setup";
+import { leaveOnlineRoom } from "@/lib/duel-room-exit";
 
 interface Room { id: string; host_id: string; guest_id: string | null; host_name: string; guest_name: string | null; status: string; state: RoomState | null; updated_at: string }
 interface Seat { roomId: string; seat: PlayerId; initial: DuelState; names: [string, string] }
 
 /** Both players confirm decks before the host deals; revision checks avoid lost readiness updates. */
 export function OnlineRoom({ roomId, render, createState }: { roomId: string; render: (seat: Seat) => ReactNode; createState: (names: [string, string], decks: [CardData[], CardData[]]) => DuelState }) {
+  const navigate = useNavigate();
   const [userId, setUserId] = useState<string | null | undefined>(undefined);
   const [room, setRoom] = useState<Room | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [exiting, setExiting] = useState(false);
+  const exitingRef = useRef(false);
   const starting = useRef(false);
 
   useEffect(() => { supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null)); }, []);
@@ -41,7 +45,7 @@ export function OnlineRoom({ roomId, render, createState }: { roomId: string; re
 
   // Only the host starts, and only after both deck confirmations are stored.
   useEffect(() => {
-    if (!room || !isPreparation(room.state) || room.host_id !== userId || !room.guest_id || starting.current) return;
+    if (!room || room.status === "finished" || exitingRef.current || !isPreparation(room.state) || room.host_id !== userId || !room.guest_id || starting.current) return;
     const [host, guest] = room.state.decks;
     if (!host || !guest) return;
     starting.current = true;
@@ -57,13 +61,14 @@ export function OnlineRoom({ roomId, render, createState }: { roomId: string; re
   }, [room, userId, createState]);
 
   const confirmDeck = async ({ deck }: DuelSelection) => {
-    if (!room || !userId || busy) return;
+    if (!room || room.status === "finished" || !userId || busy || exitingRef.current) return;
     setBusy(true);
     try {
       for (let attempt = 0; attempt < 4; attempt++) {
         const { data: latest, error: readError } = await supabase.from("duel_rooms").select("*").eq("id", roomId).single();
         if (readError) throw readError;
         const current = latest as unknown as Room;
+        if (current.status === "finished") { setRoom(current); return; }
         if (current.state && !isPreparation(current.state)) { setRoom(current); return; }
         const state = readyPreparation(current.state, current.host_id === userId ? 0 : 1, deck);
         const { data, error: writeError } = await supabase.from("duel_rooms").update({ state: state as unknown as Json }).eq("id", roomId).eq("updated_at", current.updated_at).select().maybeSingle();
@@ -75,16 +80,24 @@ export function OnlineRoom({ roomId, render, createState }: { roomId: string; re
     finally { setBusy(false); }
   };
 
+  const exit = async () => {
+    if (!room || !userId || exitingRef.current || !window.confirm("Desistir da sala e voltar à Central?")) return;
+    exitingRef.current = true; setExiting(true);
+    try { await leaveOnlineRoom(room.id, room.host_id === userId ? 0 : 1); await navigate({ to: "/jogar", replace: true }); }
+    catch (err) { exitingRef.current = false; setExiting(false); toast.error(err instanceof Error ? err.message : "Não foi possível sair da sala."); }
+  };
+
   if (userId === null) return <Panel><h1 className="text-3xl font-black">Sala {roomId}</h1><p className="text-muted-foreground">Entre na sua conta para aceitar o desafio.</p>
     <Button asChild><Link to="/auth" search={{ redirect: `/duelo/${roomId}` }}>Entrar para duelar</Link></Button></Panel>;
   if (error) return <Panel><h1 className="text-3xl font-black">Sala indisponível</h1><p className="text-muted-foreground">{error}</p><Button asChild variant="outline"><Link to="/jogar">Voltar à Central</Link></Button></Panel>;
-  if (!room || userId === undefined) return <Panel><Loader2 className="h-8 w-8 animate-spin text-primary" /></Panel>;
+  if (!room || userId === undefined) return <Panel><Loader2 className="h-8 w-8 animate-spin text-primary" /><Button asChild variant="ghost"><Link to="/jogar">Voltar ao menu</Link></Button></Panel>;
+  if (room.status === "finished" && (!room.state || isPreparation(room.state))) return <Panel><h1 className="text-3xl font-black">Sala encerrada</h1><p className="text-muted-foreground">Um duelista desistiu antes do início da partida.</p><Button asChild><Link to="/jogar">Voltar ao menu</Link></Button></Panel>;
   if (room.state && !isPreparation(room.state)) {
     const seat: PlayerId = room.host_id === userId ? 0 : 1;
     return <>{render({ roomId: room.id, seat, initial: room.state, names: [room.host_name, room.guest_name ?? "Convidado"] })}</>;
   }
   const seat: PlayerId = room.host_id === userId ? 0 : 1;
-  if (!isPreparation(room.state) || !room.state.decks[seat]) return <DuelSetup busy={busy} onStart={(selection) => void confirmDeck(selection)} />;
+  if (!isPreparation(room.state) || !room.state.decks[seat]) return <DuelSetup busy={busy} exiting={exiting} onExit={() => void exit()} onStart={(selection) => void confirmDeck(selection)} />;
   const link = `${window.location.origin}/duelo/${room.id}`;
   const copy = (text: string) => navigator.clipboard.writeText(text).then(() => toast.success("Copiado!"));
   return <Panel>
@@ -94,7 +107,7 @@ export function OnlineRoom({ roomId, render, createState }: { roomId: string; re
     <div className="flex w-full max-w-md items-center gap-2 rounded-md border border-border bg-background/70 p-2 text-left text-sm"><span className="min-w-0 flex-1 truncate">{link}</span>
       <Button size="sm" variant="outline" onClick={() => copy(link)}><Copy />Link</Button><Button size="sm" variant="outline" onClick={() => copy(room.id)}><Copy />Código</Button></div>
     <Loader2 className="h-6 w-6 animate-spin text-primary" />
-    <Button asChild variant="ghost"><Link to="/jogar">Cancelar</Link></Button>
+    <Button variant="outline" disabled={busy || exiting} onClick={() => void exit()}><Flag />{exiting ? "Saindo…" : "Desistir e voltar ao menu"}</Button>
   </Panel>;
 }
 
