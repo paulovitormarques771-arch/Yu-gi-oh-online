@@ -12,6 +12,7 @@
 
 ## Pedido atual
 - [ ] Corrigir Reviver Monstro: selecionar um monstro do próprio cemitério ou do oponente e invocá-lo no campo de quem ativou; validar ativação real e testes.
+- [ ] Desistir e voltar à Central no treino, no duelo online e na preparação/criação de sala online; sincronizar desistência quando houver partida.
 - [x] Confirmar combate ATK igual e três comparações contra DEF com testes concretos.
 - [x] Espada nos LP, tremor, ATK aumentado em cor distinta e hologramas mais nítidos; perfis individuais derivados de famílias 3D originais, não réplicas oficiais de cada monstro.
 - [x] Zona de campo, proteção do Selo e cenários 3D estilizados para Orichalcos, Toon, Umi, Yami, Wasteland, Mountain, Forest e Sogen.
