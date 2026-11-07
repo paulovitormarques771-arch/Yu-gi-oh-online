@@ -45,6 +45,17 @@ describe("Reviver Monstro cemetery selection", () => {
     expect(next.players[1].monsters[0]?.card.id).toBe(89631139);
     expect(next.players[0].graveyard.map((c) => c.id)).toEqual([55144522]);
   });
+  it("a set Monster Reborn also revives the selected opponent monster", () => {
+    const set = applyAction(setup(), { type: "setSpell", handUid: "reborn" });
+    const pending = applyAction(set, { type: "activateField", uid: "reborn" });
+    const choice = graveyardEffectChoice(pending, 0, 1, 0);
+    if (!choice) throw new Error("Target unavailable");
+    const next = applyAction(pending, { type: "resolveEffect", choice });
+    expect(next.players[0].monsters[0]?.card.id).toBe(46986414);
+    expect(next.players[0].spells.every((spell) => spell === null)).toBe(true);
+    expect(next.players[1].graveyard).toHaveLength(0);
+    expect(next.players[0].graveyard.filter((c) => c.id === 83764718)).toHaveLength(1);
+  });
   it("cemetery inspection cannot submit a spell as the revival target", () => {
     const pending = applyAction(setup(), { type: "activateSpell", handUid: "reborn" });
     expect(graveyardEffectChoice(pending, 0, 0, 0)).toBeUndefined();
