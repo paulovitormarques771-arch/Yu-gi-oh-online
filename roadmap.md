@@ -11,6 +11,8 @@
 - [ ] Etapa 7: animações, recursos visuais e acabamento
 
 ## Pedido atual
+- [x] Corrigir Reviver Monstro: escolha ampliada dos dois cemitérios, clique direto resolvendo alvo, ativação da mão/carta baixada e IA; renascimento online persistiu após recarregar; 107 testes passaram.
+- [x] Desistir e voltar à Central no treino, no duelo online e na preparação/criação de sala online; desistência persistida antes de sair e sala encerrada não aceita novos jogadores. Verificado com uma conta autenticada; atualização visual em segunda conta não conferida.
 - [x] Confirmar combate ATK igual e três comparações contra DEF com testes concretos.
 - [x] Espada nos LP, tremor, ATK aumentado em cor distinta e hologramas mais nítidos; perfis individuais derivados de famílias 3D originais, não réplicas oficiais de cada monstro.
 - [x] Zona de campo, proteção do Selo e cenários 3D estilizados para Orichalcos, Toon, Umi, Yami, Wasteland, Mountain, Forest e Sogen.

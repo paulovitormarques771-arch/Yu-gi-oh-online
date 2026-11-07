@@ -1,12 +1,17 @@
 import { CARDS, type CardData } from "@/data/catalog";
 import { CARDS_BY_ID } from "@/data/cards";
 import { MAX_COPIES, MAX_DECK_SIZE } from "@/lib/deck-rules";
-import type { DuelState } from "@/lib/duel-engine";
+import { applyAction, type DuelState, type PlayerId } from "@/lib/duel-engine";
 
 export interface SavedDuelDeck { id: string; name: string; is_main: boolean; deck_cards: { card_id: number; copies: number }[] }
 export type RoomPreparation = { kind: "setup"; decks: [number[] | null, number[] | null] };
 export type RoomState = DuelState | RoomPreparation;
 export const isPreparation = (state: RoomState | null): state is RoomPreparation => !!state && "kind" in state && state.kind === "setup";
+
+/** A departing player forfeits a dealt duel; an undealt room simply closes. */
+export function roomExitState(state: RoomState | null, seat: PlayerId) {
+  return { status: "finished" as const, state: !state || isPreparation(state) ? null : applyAction(state, { type: "surrender", actor: seat }) };
+}
 
 export function deckFromIds(ids: number[]): CardData[] {
   if (!ids.length) throw new Error("Escolha um deck com pelo menos 1 carta.");

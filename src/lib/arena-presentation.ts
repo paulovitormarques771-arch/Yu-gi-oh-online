@@ -1,6 +1,6 @@
 import type { CardData } from "@/data/catalog";
 import type { DuelState, PlayerId } from "@/lib/duel-engine";
-import { applyAction, canAttack, decisionPlayer } from "@/lib/duel-engine";
+import { applyAction, canAttack, decisionPlayer, type Action } from "@/lib/duel-engine";
 
 export type CardLocation = "hand" | "field" | "graveyard";
 
@@ -11,6 +11,19 @@ export function canInspectCard(owner: PlayerId, viewer: PlayerId, location: Card
 
 export function inspectableCard(card: CardData, owner: PlayerId, viewer: PlayerId, location: CardLocation, faceDown = false) {
   return canInspectCard(owner, viewer, location, faceDown) ? card : null;
+}
+
+/** Cemetery controls submit the reducer's exact pending choice, not a card-ID lookup. */
+export function graveyardEffectChoice(state: DuelState, viewer: PlayerId, owner: PlayerId, index: number) {
+  const pending = state.pending;
+  if (state.winner !== null || pending?.kind !== "effect" || pending.actor !== viewer || pending.stage === "cost") return undefined;
+  return pending.choices.find((choice) => choice.owner === owner && choice.zone === "graveyard" && choice.index === index);
+}
+
+/** Activation controls use the same legality checks as an actual move. */
+export function activationError(state: DuelState, action: Action) {
+  try { applyAction(state, action); return null; }
+  catch (error) { return error instanceof Error ? error.message : "Ação indisponível."; }
 }
 
 /** Explicit menu destinations wrap the existing toggle, never introduce new position rules. */

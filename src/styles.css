@@ -309,6 +309,7 @@
 .arena-action:disabled { opacity: .35; }
 .arena-minor-actions { display: flex; gap: 6px; padding: 0 12px 12px; }
 .arena-minor-actions > button { min-width: 0; flex: 1; font-size: 10px; height: 30px; padding: 0 5px; }
+.arena-minor-actions > button { white-space: normal; height: auto; min-height: 40px; font-size: 12px; }
 .arena-graveyard { padding: 12px; border-top: 1px solid var(--arena-edge); }
 .arena-graveyard-tabs { display: flex; gap: 5px; margin-bottom: 10px; }
 .arena-graveyard-tabs > button { flex: 1; padding: 0 4px; font-size: 10px; height: 28px; }
@@ -335,6 +336,25 @@
 .arena-effect-targets { display: flex; flex-wrap: wrap; gap: 8px; max-height: 320px; overflow-y: auto; }
 .arena-effect-targets .arena-card { width: 70px; height: 102px; }
 .arena-effect-panel > button { margin-top: 10px; width: 100%; white-space: normal; height: auto; min-height: 38px; }
+.grave-effect-shade { position: fixed; inset: 0; z-index: 60; pointer-events: none; background: var(--arena-setup-shade); }
+.grave-effect-dialog { position: fixed; z-index: 61; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(780px, calc(100% - 24px)); max-height: calc(100svh - 24px); overflow: auto; border: 1px solid var(--arena-green); border-radius: 8px; background: var(--arena-panel-gradient); box-shadow: var(--arena-zone-glow); }
+.grave-effect-dialog > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 20px; border-bottom: 1px solid var(--arena-edge); }
+.grave-effect-dialog > header span { color: var(--arena-green); font-size: 12px; font-weight: 700; }
+.grave-effect-dialog h2 { font-size: 26px; color: var(--gold); overflow-wrap: anywhere; }
+.grave-effect-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; padding: 20px; }
+.grave-effect-groups section { min-width: 0; }
+.grave-effect-groups h3 { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; font-family: var(--font-body); font-size: 18px; color: var(--arena-cyan); }
+.grave-effect-groups h3 small, .grave-effect-groups p { color: var(--muted-foreground); font-size: 14px; }
+.grave-effect-choices { display: flex; flex-direction: column; gap: 10px; }
+.grave-effect-choice { width: 100%; height: auto; min-height: 124px; padding: 12px; gap: 14px; text-align: left; white-space: normal; justify-content: flex-start; border-color: var(--arena-edge); }
+.grave-effect-choice img { width: 68px; height: 99px; flex-shrink: 0; object-fit: contain; }
+.grave-effect-choice > span { min-width: 0; flex: 1; }
+.grave-effect-choice strong { display: block; font-size: 17px; overflow-wrap: anywhere; }
+.grave-effect-choice small { display: block; color: var(--muted-foreground); font-size: 13px; margin-top: 8px; }
+.grave-effect-choice b { display: flex; align-items: center; gap: 5px; color: var(--arena-green); font-size: 13px; margin-top: 8px; }
+.grave-effect-choice b svg { width: 14px; height: 14px; flex-shrink: 0; }
+.grave-effect-dialog > footer { padding: 12px 20px; border-top: 1px solid var(--arena-edge); text-align: right; }
+@media (max-width: 640px) { .grave-effect-groups { grid-template-columns: minmax(0, 1fr); padding: 16px; gap: 18px; } .grave-effect-dialog > header { padding: 16px; } .grave-effect-dialog h2 { font-size: 22px; } }
 @keyframes arena-camera-drift { from { transform: scale(1); } to { transform: scale(1.055) translateY(-1%); } }
 @keyframes arena-beam-travel { from { transform: translateX(-100px) rotate(28deg); opacity: .1; } to { transform: translateX(130px) rotate(28deg); opacity: .45; } }
 @media (min-width: 1700px) { .arena-main-grid { grid-template-columns: minmax(0, 1fr) 240px; } }
@@ -513,6 +533,7 @@
 .duel-opponent-decks { flex-wrap: wrap; justify-content: flex-start; gap: 6px; }
 .duel-opponent-decks button { max-width: 100%; white-space: normal; height: auto; min-height: 36px; overflow-wrap: anywhere; }
 .duel-setup-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 20px 28px; border-top: 1px solid var(--arena-edge); }
+.duel-setup-footer > button, .duel-setup-footer > a { min-width: 0; height: auto; min-height: 44px; white-space: normal; }
 .arena-context-menu { border-color: var(--arena-cyan); max-width: calc(100vw - 16px); }
 .arena-context-menu [role="menuitem"] { gap: 9px; min-height: 38px; font-size: 15px; }
 .arena-context-menu svg { width: 16px; height: 16px; color: var(--arena-cyan); flex-shrink: 0; }

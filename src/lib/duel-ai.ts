@@ -147,7 +147,7 @@ function easyAction(s: DuelState): Action {
       const effect = effectFor(h.card);
       if (h.card.kind !== "spell" || effect?.timing !== "main") return false;
       if (effect.continuous && !me.spells.some((m) => m === null)) return false;
-      if (effect.target !== "none") return false;
+      if (effect.target !== "none" && effect.operation !== "revive") return false;
       if (h.card.id === 83764718 && !me.monsters.some((m) => m === null)) return false;
       if (effect.operation === "destroyEnemy" || effect.operation === "fissure") return opp.monsters.some(Boolean);
       if (effect.operation === "destroyAll") return opp.monsters.filter(Boolean).length > me.monsters.filter(Boolean).length;

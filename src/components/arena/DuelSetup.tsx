@@ -1,7 +1,7 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Layers, Loader2, Shield, Star, Swords } from "lucide-react";
+import { Flag, Layers, Loader2, Shield, Star, Swords } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -17,8 +17,8 @@ import { DIFFICULTY_LABELS, isDifficulty, type AIDifficulty } from "@/lib/duel-t
 
 export type DuelSelection = { deck: CardData[]; opponentDeck: CardData[]; difficulty: AIDifficulty };
 
-export function DuelSetup({ vsAI = false, local = false, initialDifficulty = "normal", onStart, busy = false }: {
-  vsAI?: boolean; local?: boolean; initialDifficulty?: AIDifficulty; busy?: boolean; onStart: (selection: DuelSelection) => void;
+export function DuelSetup({ vsAI = false, local = false, initialDifficulty = "normal", onStart, busy = false, onExit, exiting = false }: {
+  vsAI?: boolean; local?: boolean; initialDifficulty?: AIDifficulty; busy?: boolean; onStart: (selection: DuelSelection) => void; onExit?: () => void; exiting?: boolean;
 }) {
   const { data: user, isPending: authPending } = useAuthUser();
   const [deckId, setDeckId] = useState("automatic");
@@ -60,7 +60,7 @@ export function DuelSetup({ vsAI = false, local = false, initialDifficulty = "no
               {vsAI && <><h2>Dificuldade da IA</h2><ToggleGroup type="single" value={difficulty} className="duel-setup-difficulty" onValueChange={(value) => { if (isDifficulty(value)) setDifficulty(value); }} aria-label="Dificuldade da IA">{Object.entries(DIFFICULTY_LABELS).map(([value, label]) => <ToggleGroupItem value={value} key={value} variant="outline">{label}</ToggleGroupItem>)}</ToggleGroup></>}
             </section>
           </div>
-          <footer className="duel-setup-footer"><Button asChild variant="ghost"><Link to="/jogar">Voltar à Central</Link></Button><Button className="duel-replay-button" size="lg" disabled={busy || loading || !chosen?.cards.length || (local && !other?.cards.length)} onClick={() => { if (chosen && other) onStart({ deck: chosen.cards, opponentDeck: other.cards, difficulty }); }}>{busy ? <Loader2 className="animate-spin" /> : <Swords />}{busy ? "Preparando…" : "Começar duelo"}</Button></footer>
+          <footer className="duel-setup-footer">{onExit ? <Button variant="ghost" disabled={busy || exiting} onClick={onExit}><Flag />{exiting ? "Saindo…" : "Desistir e voltar ao menu"}</Button> : <Button asChild variant="ghost"><Link to="/jogar"><Flag />Desistir e voltar ao menu</Link></Button>}<Button className="duel-replay-button" size="lg" disabled={busy || exiting || loading || !chosen?.cards.length || (local && !other?.cards.length)} onClick={() => { if (chosen && other) onStart({ deck: chosen.cards, opponentDeck: other.cards, difficulty }); }}>{busy ? <Loader2 className="animate-spin" /> : <Swords />}{busy ? "Preparando…" : "Começar duelo"}</Button></footer>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

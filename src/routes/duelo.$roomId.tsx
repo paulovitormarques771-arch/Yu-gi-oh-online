@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight, BookOpen, ChevronRight, Circle, Eye, Flag, Layers, RotateCcw, Shield, Sparkles, Swords, Zap, X } from "lucide-react";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -10,7 +10,7 @@ import { ArenaHud } from "@/components/arena/ArenaHud";
 import { CHARACTERS, type CardData } from "@/data/catalog";
 import { ALL_CARDS } from "@/data/cards";
 import { aiNextAction } from "@/lib/duel-ai";
-import { fieldCardCommands, finishTurn, inspectableCard } from "@/lib/arena-presentation";
+import { activationError, fieldCardCommands, finishTurn, graveyardEffectChoice, inspectableCard } from "@/lib/arena-presentation";
 import { supabase } from "@/integrations/supabase/client";
 import { OnlineRoom } from "@/components/arena/OnlineRoom";
 import { isRoomCode } from "@/lib/online-room";
@@ -26,6 +26,8 @@ import { isPreparation, type RoomState } from "@/lib/duel-setup";
 import { DIFFICULTY_LABELS, emptyPlaystyle, isDifficulty, observePlaystyle, readPlaystyle, TRAINING_PROFILE_KEY, trainingDeck, type AIDifficulty } from "@/lib/duel-training";
 import { drawEvent, spellEvent, type DrawEvent, type SpellEvent } from "@/lib/spell-cinematics";
 import { isFieldSpell } from "@/lib/field-spells";
+import { GraveyardEffectDialog } from "@/components/arena/GraveyardEffectDialog";
+import { leaveOnlineRoom } from "@/lib/duel-room-exit";
 
 export const Route = createFileRoute("/duelo/$roomId")({
   validateSearch: (search: Record<string, unknown>): { difficulty?: AIDifficulty } => isDifficulty(search['difficulty']) ? { difficulty: search['difficulty'] } : {},
@@ -72,6 +74,9 @@ const createOnlineDuel = (names: [string, string], decks: [CardData[], CardData[
 export interface OnlineSeat { roomId: string; seat: PlayerId; initial: DuelState; names: [string, string] }
 
 function Arena({ online, selection, onPrepare }: { online?: OnlineSeat; selection?: DuelSelection; onPrepare?: (level: AIDifficulty) => void }) {
+  const navigate = useNavigate();
+  const [leaving, setLeaving] = useState(false);
+  const leavingRef = useRef(false);
   const { roomId } = Route.useParams();
   const vsAI = roomId === "treino";
   const search = Route.useSearch();
@@ -113,12 +118,15 @@ function Arena({ online, selection, onPrepare }: { online?: OnlineSeat; selectio
   const me = s.players[view];
   const opponent = s.players[opponentId];
   const aiTurn = vsAI && decisionPlayer(s) === 1 && s.winner === null;
-  const playable = !opening && !aiTurn && s.winner === null && decisionPlayer(s) === view;
+  const playable = !leaving && !opening && !aiTurn && s.winner === null && decisionPlayer(s) === view;
   const main = s.phase === "main1" || s.phase === "main2";
   const selHand = me.hand.find((h) => h.uid === sel);
   const selMonster = me.monsters.find((m) => m?.uid === sel);
   const selSpell = me.fieldSpell?.uid === sel ? me.fieldSpell : me.spells.find((m) => m?.uid === sel);
-  const activateReady = playable && !s.pending && main && (selHand?.card.kind === "spell" && effectFor(selHand.card)?.timing === "main" || selSpell?.card.kind === "spell" && selSpell.faceDown && effectFor(selSpell.card)?.timing === "main");
+  const activation: Action | null = selHand?.card.kind === "spell" && effectFor(selHand.card)?.timing === "main" ? { type: "activateSpell", actor: view, handUid: selHand.uid } : selSpell?.card.kind === "spell" && selSpell.faceDown && effectFor(selSpell.card)?.timing === "main" ? { type: "activateField", actor: view, uid: selSpell.uid } : null;
+  const activationIssue = activation && playable && !s.pending && main ? activationError(s, activation) : null;
+  const activateReady = playable && !s.pending && main && !!activation && !activationIssue;
+  const choosingRevival = playable && s.pending?.kind === "effect" && s.pending.sourceCard.id === 83764718;
   const specialJinzo = selHand?.card.id === 35803249;
   const need = selHand?.card.kind === "monster" ? specialJinzo ? 1 : tributesNeeded(summonLevel(s, view, selHand.card)) : 0;
   const canSummon = playable && !s.pending && main && !!selHand && selHand.card.kind === "monster" && (!me.normalSummoned || specialJinzo) && tributes.length === need && (!specialJinzo || tributes.every((uid) => me.monsters.some((m) => m?.uid === uid && m.card.id === 77585513 && !m.faceDown))) && (me.monsters.some((m) => !m) || need > 0) && !/Fusion|Ritual/.test(selHand.card.type ?? "");
@@ -128,12 +136,12 @@ function Arena({ online, selection, onPrepare }: { online?: OnlineSeat; selectio
   const selectedCard = selHand?.card ?? selMonster?.card ?? selSpell?.card;
 
   useEffect(() => {
-    if (!aiTurn || opening) return;
+    if (!aiTurn || opening || leaving) return;
     const timer = setTimeout(() => {
-      setS((current) => { try { return applyAction(current, aiNextAction(current, difficulty, profile.current)); } catch { return current; } });
+      setS((current) => { if (leavingRef.current) return current; try { return applyAction(current, aiNextAction(current, difficulty, profile.current)); } catch { return current; } });
     }, 1900);
     return () => clearTimeout(timer);
-  }, [aiTurn, s, difficulty, opening]);
+  }, [aiTurn, s, difficulty, opening, leaving]);
   useEffect(() => { if (!opening) return; const timer = setTimeout(() => setOpening(false), 2300); return () => clearTimeout(timer); }, [opening]);
   useEffect(() => {
     const before = previous.current; previous.current = s;
@@ -191,6 +199,18 @@ function Arena({ online, selection, onPrepare }: { online?: OnlineSeat; selectio
   };
   const inspect = (card: CardData, enemy = false) => setZoom({ card, owner: enemy ? opponent.name : me.name });
   const attack = () => { if (selMonster && attackReady) act({ type: "attack", attackerUid: selMonster.uid, ...(target ? { targetUid: target } : {}) }); };
+  const surrenderAndLeave = async () => {
+    if (leavingRef.current || !window.confirm("Desistir do duelo e voltar à Central?")) return;
+    leavingRef.current = true; setLeaving(true);
+    try {
+      if (online) await leaveOnlineRoom(online.roomId, online.seat);
+      else setS(applyAction(s, { type: "surrender", actor: vsAI ? 0 : view }));
+      await navigate({ to: "/jogar", replace: true });
+    } catch (error) {
+      leavingRef.current = false; setLeaving(false);
+      toast.error(error instanceof Error ? error.message : "Não foi possível sair do duelo. Tente novamente.");
+    }
+  };
   const summon = (defense = false) => { if (selHand && canSummon && !(specialJinzo && defense)) act({ type: "summon", handUid: selHand.uid, tributes, set: defense }); };
   const replay = (level = difficulty) => {
     if (online) { if (online.seat === 0) void supabase.from("duel_rooms").update({ state: { kind: "setup", decks: [null, null] } as unknown as Json, status: "ready" }).eq("id", online.roomId).then(({ error }) => { if (error) toast.error("Não foi possível preparar a revanche."); }); return; }
@@ -212,18 +232,18 @@ function Arena({ online, selection, onPrepare }: { online?: OnlineSeat; selectio
       {need > 0 && !canSummon && <Button variant="outline" onClick={() => { setZoom(null); setTributeMode(true); }}><Circle />Sacrificar monstros ({tributes.length}/{need})</Button>}
       <Button variant="outline" disabled={!canSummon || specialJinzo} onClick={() => summon(true)}><Shield />Baixar em defesa</Button>
     </> : <>
-      {selHand?.card.kind === "spell" && <Button disabled={!activateReady} onClick={activate}><Zap />Ativar</Button>}
+      {selHand?.card.kind === "spell" && <><Button disabled={!activateReady} onClick={activate}><Zap />Ativar</Button>{activationIssue && <p role="status" className="w-full text-sm text-muted-foreground">{activationIssue}</p>}</>}
       <Button variant="outline" disabled={!canSet} onClick={() => { if (selHand) act({ type: "setSpell", handUid: selHand.uid }); }}><Layers />Baixar</Button>
     </>}
     <Button variant="ghost" onClick={() => setZoom(null)}><ArrowRight />Voltar ao campo</Button>
   </> : zoom?.location === "monster" && need > 0 && zoom.uid && playable ? <Button onClick={() => { if (zoom.uid) toggleTribute(zoom.uid); }}><Circle />{tributes.includes(zoom.uid) ? "Remover tributo" : "Oferecer como tributo"}</Button>
-    : zoom?.location === "spell" && playable ? <Button disabled={!activateReady} onClick={activate}><Zap />Ativar</Button>
+    : zoom?.location === "spell" && playable ? <><Button disabled={!activateReady} onClick={activate}><Zap />Ativar</Button>{activationIssue && <p role="status" className="w-full text-sm text-muted-foreground">{activationIssue}</p>}</>
     : zoom?.location === "enemy" && selMonster && playable && s.phase === "battle" ? <Button disabled={!attackReady} onClick={attack}><Swords />Atacar este monstro</Button> : undefined;
 
   return <div className={`duel-screen ${combat?.damages.length ? "arena-taking-damage" : ""}`}>
     <ArenaBackdrop />
     <header className="arena-topbar">
-      <Button asChild variant="ghost" size="sm"><Link to="/jogar"><ArrowLeft />Sair</Link></Button>
+      {s.winner === null ? <Button variant="ghost" size="sm" disabled={leaving} aria-label="Desistir do duelo" onClick={() => void surrenderAndLeave()}><Flag />{leaving ? "Saindo…" : "Desistir"}</Button> : <Button asChild variant="ghost" size="sm"><Link to="/jogar"><ArrowLeft />Sair</Link></Button>}
       <div className="arena-wordmark">DUEL <span>ARENA</span></div>
       <span className="arena-room-tag"><span className="arena-room-dot" />{vsAI ? `TREINO · IA ${DIFFICULTY_LABELS[difficulty].toUpperCase()}` : `${online ? "ONLINE" : "LOCAL"} · ${roomId.toUpperCase()}`}</span>
     </header>
@@ -271,7 +291,7 @@ function Arena({ online, selection, onPrepare }: { online?: OnlineSeat; selectio
         <aside className="arena-right-rail">
           <h2 className="arena-rail-heading"><Swords size={14} />{s.winner !== null ? "DUELO ENCERRADO" : "COMANDOS DO DUELISTA"}</h2>
           {vsAI && <ToggleGroup type="single" value={difficulty} aria-label="Dificuldade da IA" className="arena-difficulty" onValueChange={(value) => { if (!isDifficulty(value) || value === difficulty) return; if (window.confirm("Trocar a dificuldade e iniciar um novo duelo?")) replay(value); }}>{Object.entries(DIFFICULTY_LABELS).map(([value, label]) => <ToggleGroupItem key={value} value={value}>{label}</ToggleGroupItem>)}</ToggleGroup>}
-          {s.pending && <section className="arena-effect-panel" aria-label="Efeito pendente">
+          {s.pending && !choosingRevival && <section className="arena-effect-panel" aria-label="Efeito pendente">
             <h3>{s.pending.kind === "effect" ? s.pending.stage === "cost" ? "Escolha 1 carta para descartar" : cardText(s.pending.sourceCard).name : "Responder à jogada"}</h3>
             {playable ? <>
               <div className="arena-effect-targets">
@@ -298,21 +318,25 @@ function Arena({ online, selection, onPrepare }: { online?: OnlineSeat; selectio
               {selMonster && <Button className="arena-action" disabled={!playable || !(fieldCardCommands(s, view, view, selMonster.uid).toAttack || fieldCardCommands(s, view, view, selMonster.uid).toDefense)} onClick={() => act({ type: "changePosition", uid: selMonster.uid })}><RotateCcw />Mudar posição</Button>}
             </div>
             <Button className="arena-next-phase" disabled={!playable || !!s.pending || s.phase === "draw"} onClick={() => act({ type: "nextPhase" })}><ChevronRight />PRÓXIMA FASE</Button>
-            <div className="arena-minor-actions"><Button variant="ghost" size="icon" aria-label="Desistir do duelo" title="Desistir do duelo" disabled={!playable} onClick={() => { if (window.confirm("Desistir deste duelo?")) act({ type: "surrender" }); }}><Flag /></Button></div>
+            <div className="arena-minor-actions"><Button variant="outline" disabled={leaving} onClick={() => void surrenderAndLeave()}><Flag />Desistir e voltar ao menu</Button></div>
           </>}
           <h2 className="arena-rail-heading"><Layers size={14} />CEMITÉRIO · {graveCards.length}</h2>
           <div className="arena-graveyard"><div className="arena-graveyard-tabs"><Button size="sm" variant={grave === "own" ? "secondary" : "ghost"} aria-pressed={grave === "own"} onClick={() => setGrave("own")}>Seu ({me.graveyard.length})</Button><Button size="sm" variant={grave === "enemy" ? "secondary" : "ghost"} aria-pressed={grave === "enemy"} onClick={() => setGrave("enemy")}>Oponente ({opponent.graveyard.length})</Button></div>
-            {graveCards.length ? <div className="arena-graveyard-cards">{graveCards.map((card, i) => <ArenaCard key={`${card.id}-${i}`} card={card} onClick={() => inspect(card, grave === "enemy")} />)}</div> : <div className="arena-empty-grave">Nenhuma carta</div>}
+            {graveCards.length ? <div className="arena-graveyard-cards">{graveCards.map((card, i) => {
+              const choice = playable ? graveyardEffectChoice(s, view, grave === "enemy" ? opponentId : view, i) : undefined;
+              return <ArenaCard key={`${card.id}-${i}`} card={card} className={choice ? "arena-card-available" : ""} onClick={() => choice ? act({ type: "resolveEffect", choice }) : inspect(card, grave === "enemy")} />;
+            })}</div> : <div className="arena-empty-grave">Nenhuma carta</div>}
           </div>
         </aside>
       </div>
       <footer className="arena-footer"><span>● {vsAI ? "TREINO CONTRA IA" : online ? "DUELO ONLINE" : "DUELO LOCAL"}</span><span>{aiTurn ? "TURNO DO OPONENTE" : `TURNO DE ${s.players[s.active].name.toUpperCase()}`}</span><span>DUEL ARENA · PROJETO DE FÃS</span></footer>
     </main>
     <CardZoom base={zoom ? ALL_CARDS.find((c) => c.id === zoom.card.id) : undefined} card={zoom?.card ?? null} owner={zoom?.owner} onClose={() => setZoom(null)} actions={modalActions} />
+    {choosingRevival && <GraveyardEffectDialog state={s} viewer={view} onChoose={(choice) => act({ type: "resolveEffect", choice })} onCancel={() => act({ type: "cancelEffect" })} />}
     {s.pending?.kind === "response" && playable && <TrapConfirmation spells={availableResponses(s)} onActivate={(uid) => act({ type: "activateField", uid })} onPass={() => act({ type: "passResponse" })} />}
     {opening && <DuelOpening />}
     {s.winner === null && phaseNotice && <PhaseAnnouncement key={`${phaseNotice.turn}-${phaseNotice.label}`} {...phaseNotice} />}
     <DamageAnnouncement event={combat} view={view} />
-    <DuelResult winner={s.winner === null ? null : s.winner === (online ? online.seat : 0)} canReplay={!online || online.seat === 0} onReplay={() => replay()} />
+    <DuelResult winner={leaving || s.winner === null ? null : s.winner === (online ? online.seat : 0)} canReplay={!online || online.seat === 0} onReplay={() => replay()} />
   </div>;
 }
