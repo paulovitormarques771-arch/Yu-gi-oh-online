@@ -1,4 +1,5 @@
 # Duel Arena roadmap
+- [x] Descrição resumida do projeto para entrega no curso (arquivo em Files).
 - [x] Pedido visual atual: área da arena 27% mais larga no desktop e câmera ajustada aos cantos, cartas 13% maiores sem cortar baralhos.
 - [x] Pedido visual atual: foil iridescente em raras visíveis; quatro artes enviadas em relevo 3D texturizado, Buraco Negro/Raigeki ilustrados e demais raras com modelos sólidos estilizados por família, não modelos realistas exclusivos de cada carta.
 - [x] Pedido visual atual: oito campos com cores/luzes marcantes e zonas nítidas; ampliação, ataques, efeitos e privacidade conferidos em desktop/celular, 69 testes passaram. Fluidez no aparelho real não medida.
